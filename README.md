@@ -8,9 +8,21 @@ Folder ini berisi halaman aplikasi yang dapat langsung diunggah ke GitHub Pages 
 - `style.css` — warna dan tampilan;
 - `script.js` — fungsi aplikasi dan komunikasi dengan GAS;
 - `config.js` — tempat menempel URL Web App GAS;
-- `assets/og.png` — gambar pratinjau ketika tautan dibagikan.
+- `assets/og.png` — gambar pratinjau ketika tautan dibagikan;
+- `assets/context/*.webp` — ilustrasi ringan untuk hubungan materi dengan kehidupan nyata.
 
 Sebelum mengunggah, tempel URL GAS berakhiran `/exec` pada `config.js`. Jangan menaruh PIN guru atau jawaban materi pada folder ini.
 
-Panduan lengkap terdapat pada `../PANDUAN-MATCH-9.md` di komputer Kak Iphoel.
+Versi penyempurnaan memiliki:
 
+- enam tema warna cerah;
+- tampilan responsif: lanskap lebar di laptop dan tetap nyaman di HP;
+- menu utama yang turun dari tombol Σ serta tombol layar penuh;
+- materi bertahap satu fokus per layar;
+- notasi matematika melalui MathJax;
+- pilihan kelas 9-4 dan 9-2;
+- game prasyarat empat murid dengan empat soal berbeda;
+- nilai diagnostik 50–100 yang muncul dan tersimpan saat murid selesai;
+- pemuatan cepat melalui cache lokal dan cache Google Apps Script.
+
+Panduan lengkap terdapat pada `../PANDUAN-MATCH-9.md` di komputer Kak Iphoel.

@@ -2,7 +2,7 @@
 
 const MATCH9_KEYS = {
   gasUrl: "match9-gas-url-v1",
-  publicCache: "match9-public-cache-v2",
+  publicCache: "match9-public-cache-v3",
   theme: "match9-theme-v1",
 };
 
@@ -23,6 +23,7 @@ const state = {
   gameTimerId: null,
   gameRemaining: 180,
   gameElapsed: 0,
+  gameResults: new Map(),
 };
 
 const elements = {};
@@ -56,10 +57,11 @@ function cacheElements() {
     "classSelect", "gradeClassSelect", "attendanceDate", "markAllPresentButton",
     "saveAttendanceButton", "classCountLabel", "studentList", "openGameButton", "gameBackButton",
     "gameArena", "gameTopicLabel", "gameMaterialLabel", "gameTimer", "gameStatus",
-    "gameQuestionPanel", "gameQuestion", "drawStudentsButton", "finishGameButton",
+    "drawStudentsButton", "finishGameButton", "continueGameButton",
     "resetDrawButton", "drawResults", "weightStrip", "gradeTableBody", "saveGradesButton",
     "gasUrlInput", "saveUrlButton", "clearCacheButton", "teacherModeButton", "teacherState",
-    "themePicker", "loadingOverlay", "loadingText", "toast", "brandButton",
+    "themePicker", "loadingOverlay", "loadingText", "toast", "brandButton", "mainMenu",
+    "homeViewButton", "fullscreenButton",
   ].forEach(function (id) { elements[id] = document.getElementById(id); });
 }
 
@@ -67,12 +69,20 @@ function bindEvents() {
   document.querySelectorAll("[data-go]").forEach(function (button) {
     button.addEventListener("click", function () { navigate(button.dataset.go); });
   });
-  elements.brandButton.addEventListener("click", function () { navigate("home"); });
+  elements.brandButton.addEventListener("click", toggleMainMenu);
+  elements.mainMenu.addEventListener("click", function () { closeMainMenu(); });
+  document.addEventListener("click", function (event) {
+    if (!event.target.closest(".brand-wrap")) closeMainMenu();
+  });
+  document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeMainMenu(); });
+  elements.homeViewButton.addEventListener("click", function () { navigate("home"); });
+  elements.fullscreenButton.addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", updateFullscreenButton);
   elements.connectionButton.addEventListener("click", function () {
-    if (state.data && state.gasUrl) loadData();
+    if (state.data && state.gasUrl) loadData({ force: true });
     else navigate("settings");
   });
-  elements.refreshButton.addEventListener("click", function () { loadData(); });
+  elements.refreshButton.addEventListener("click", function () { loadData({ force: true }); });
   elements.lessonBackButton.addEventListener("click", function () { navigate("home"); });
   elements.materialList.addEventListener("click", onMaterialClick);
   elements.lessonContent.addEventListener("click", onLessonClick);
@@ -86,11 +96,12 @@ function bindEvents() {
   elements.drawStudentsButton.addEventListener("click", drawStudents);
   elements.finishGameButton.addEventListener("click", finishGame);
   elements.resetDrawButton.addEventListener("click", resetDrawRound);
+  elements.continueGameButton.addEventListener("click", continueFromGame);
   elements.drawResults.addEventListener("click", onGameClick);
   elements.gradeTableBody.addEventListener("input", onGradeInput);
   elements.saveGradesButton.addEventListener("click", saveGrades);
   elements.saveUrlButton.addEventListener("click", saveGasUrl);
-  elements.clearCacheButton.addEventListener("click", function () { loadData(); });
+  elements.clearCacheButton.addEventListener("click", function () { loadData({ force: true }); });
   elements.teacherModeButton.addEventListener("click", openTeacherMode);
   elements.themePicker.addEventListener("click", onThemeChoice);
 }
@@ -116,11 +127,7 @@ function navigate(screen) {
   document.querySelectorAll(".screen").forEach(function (section) {
     section.classList.toggle("active", section.dataset.screen === state.screen);
   });
-  document.querySelectorAll(".bottom-nav [data-go]").forEach(function (button) {
-    const homeActive = state.screen === "lesson" && button.dataset.go === "home";
-    const classActive = state.screen === "game" && button.dataset.go === "class";
-    button.classList.toggle("active", button.dataset.go === state.screen || homeActive || classActive);
-  });
+  closeMainMenu();
   if (state.screen === "class") renderClass();
   if (state.screen === "game") renderGame();
   if (state.screen === "grades") renderGrades();
@@ -128,8 +135,36 @@ function navigate(screen) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function toggleMainMenu() {
+  const willOpen = elements.mainMenu.classList.contains("hidden");
+  elements.mainMenu.classList.toggle("hidden", !willOpen);
+  elements.brandButton.setAttribute("aria-expanded", String(willOpen));
+}
+
+function closeMainMenu() {
+  elements.mainMenu.classList.add("hidden");
+  elements.brandButton.setAttribute("aria-expanded", "false");
+}
+
+async function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+    else await document.exitFullscreen();
+  } catch (error) {
+    showToast("Mode layar penuh belum diizinkan oleh peramban.");
+  }
+}
+
+function updateFullscreenButton() {
+  const active = Boolean(document.fullscreenElement);
+  elements.fullscreenButton.textContent = active ? "⛶" : "⛶";
+  elements.fullscreenButton.title = active ? "Keluar dari layar penuh" : "Layar penuh";
+  elements.fullscreenButton.setAttribute("aria-label", elements.fullscreenButton.title);
+}
+
 async function loadData(options) {
   const quiet = Boolean(options?.quiet);
+  const force = Boolean(options?.force);
   if (!state.gasUrl) {
     setConnection("draft", "Belum tersambung");
     elements.setupNotice.classList.remove("hidden");
@@ -139,15 +174,15 @@ async function loadData(options) {
   if (!quiet) showLoading("Mengambil materi dari Google Sheet…");
   try {
     let data;
-    try { data = await apiGet("bootstrap"); }
-    catch (fetchError) { data = await jsonpGet("bootstrap"); }
+    try { data = await apiGet("bootstrap", force); }
+    catch (fetchError) { data = await jsonpGet("bootstrap", force); }
     if (!data?.ok) throw new Error(data?.error || "Data Google Sheet belum dapat dibaca.");
     state.data = data;
     localStorage.setItem(MATCH9_KEYS.publicCache, JSON.stringify(data));
     prepareDataState();
     renderAll();
     setConnection("connected", "Sheet tersambung");
-    if (!quiet) showToast("Materi, kelas, dan nilai berhasil dimuat.");
+    if (!quiet) showToast(force ? "Data terbaru berhasil dimuat dari Google Sheet." : "Materi, kelas, dan nilai berhasil dimuat.");
   } catch (error) {
     setConnection("error", "Koneksi gagal");
     if (!state.data) elements.setupNotice.classList.remove("hidden");
@@ -294,21 +329,27 @@ function renderLesson() {
     </section>
     <div class="lesson-navigation">
       <button class="secondary-button" type="button" data-stage-prev${state.lessonStep === 0 ? " disabled" : ""}>← Kembali</button>
-      <button class="primary-button" type="button" data-stage-next${state.lessonStep === stages.length - 1 ? " disabled" : ""}>Lanjut →</button>
+      ${state.lessonStep === stages.length - 1
+        ? `<button class="primary-button" type="button" data-stage-finish>Selesai ✓</button>`
+        : `<button class="primary-button" type="button" data-stage-next>Lanjut →</button>`}
     </div>`;
   typesetMath(elements.lessonContent);
 }
 
 function lessonStages(topic, teacher) {
   const points = splitPoints(topic.POIN_PENTING);
+  const imageUrl = safeImageUrl(topic.GAMBAR_URL);
+  const contextImage = imageUrl
+    ? `<figure class="context-image"><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(topic.KETERANGAN_GAMBAR || "Ilustrasi hubungan materi dengan kehidupan sehari-hari")}" loading="eager" /><figcaption class="context-caption">${escapeHtml(topic.KETERANGAN_GAMBAR || "Perhatikan situasi pada gambar, lalu hubungkan dengan model matematika.")}</figcaption></figure>`
+    : "";
   const stages = [
     {
       kicker: "Tujuan pembelajaran", icon: "◎", title: topic.JUDUL,
       html: `<p class="stage-lead">${mathText(topic.TUJUAN || "Tujuan pembelajaran belum diisi.")}</p>`,
     },
     {
-      kicker: "Hubungan dengan kehidupan", icon: "⌂", title: "Dari pengalaman nyata ke matematika",
-      html: `<p class="stage-lead">${mathText(topic.KONTEKS_SEHARI_HARI || dailyFallback())}</p>`,
+      kicker: "Hubungan dengan kehidupan", icon: "⌂", title: "Ternyata matematika ada di sekitar kita",
+      html: `<div class="context-layout${contextImage ? " has-image" : ""}"><p class="stage-lead">${mathText(topic.KONTEKS_SEHARI_HARI || "Contoh kehidupan sehari-hari belum diisi pada Google Sheet.")}</p>${contextImage}</div>`,
     },
     {
       kicker: "Penjelasan singkat", icon: "∑", title: "Inti materi",
@@ -316,7 +357,7 @@ function lessonStages(topic, teacher) {
     },
     {
       kicker: "Tes prasyarat", icon: "?", title: "Soal pengantar",
-      html: `<div class="focus-question">${mathText(topic.SOAL_PRASYARAT || "Soal prasyarat belum diisi.")}</div>${answerControl("prerequisite-answer", teacher?.JAWABAN_PRASYARAT || "", "Lihat jawaban")}`,
+      html: `<div class="focus-question">${mathText(prerequisiteQuestions(topic)[0] || "Soal prasyarat belum diisi.")}</div>${answerControl("prerequisite-answer", teacher?.JAWABAN_PRASYARAT_1 || teacher?.JAWABAN_PRASYARAT || "", "Lihat jawaban")}`,
       action: `<button class="stage-action-button" type="button" data-start-game>Gunakan untuk game 4 murid</button>`,
     },
   ];
@@ -342,10 +383,6 @@ function lessonStages(topic, teacher) {
   return stages;
 }
 
-function dailyFallback() {
-  return "Cari benda, kegiatan, atau persoalan di sekitar rumah dan sekolah yang dapat dijelaskan menggunakan ide pada materi ini.";
-}
-
 function answerControl(id, answer, label) {
   if (!state.teacherAnswers) return `<button class="reveal-button" type="button" data-unlock-teacher>${escapeHtml(label)} · PIN guru</button>`;
   if (!answer) return `<p class="locked-answer">Jawaban belum diisi pada Google Sheet.</p>`;
@@ -363,6 +400,7 @@ async function onLessonClick(event) {
   }
   if (event.target.closest("[data-stage-prev]")) { state.lessonStep -= 1; renderLesson(); scrollLessonTop(); return; }
   if (event.target.closest("[data-stage-next]")) { state.lessonStep += 1; renderLesson(); scrollLessonTop(); return; }
+  if (event.target.closest("[data-stage-finish]")) { navigate("home"); showToast("Materi selesai. Silakan pilih materi berikutnya."); return; }
   if (event.target.closest("[data-unlock-teacher]")) { await openTeacherMode(); return; }
   const reveal = event.target.closest("[data-reveal]");
   if (reveal) {
@@ -414,53 +452,68 @@ async function saveAttendance() {
 function renderGame() {
   const material = selectedMaterial();
   const topic = selectedTopic();
+  const questions = prerequisiteQuestions(topic);
+  const allSaved = state.currentDraw.length > 0 && state.currentDraw.every(function (student) {
+    return state.gameResults.get(student.ID_SISWA)?.status === "saved";
+  });
+
   elements.gameTopicLabel.textContent = topic?.JUDUL || "Pilih materi dahulu";
   elements.gameMaterialLabel.textContent = material ? `${material.JUDUL} · ${className()}` : `Game prasyarat · ${className()}`;
-  elements.gameTimer.textContent = formatTime(state.gameRemaining);
-  elements.gameArena.classList.toggle("time-up", state.gamePhase === "scoring");
-  elements.gameQuestionPanel.classList.toggle("hidden", state.gamePhase !== "active");
-  elements.drawStudentsButton.classList.toggle("hidden", !["ready", "saved"].includes(state.gamePhase));
+  elements.gameTimer.textContent = formatTime(Math.max(0, state.gameRemaining));
+  elements.gameArena.classList.toggle("time-up", ["completing", "completed"].includes(state.gamePhase));
+  elements.drawStudentsButton.classList.toggle("hidden", state.gamePhase !== "ready" && !(state.gamePhase === "completed" && allSaved));
   elements.drawStudentsButton.disabled = state.gamePhase === "drawing";
-  elements.drawStudentsButton.textContent = state.gamePhase === "saved" ? "Acak 4 murid berikutnya" : "Acak 4 murid";
+  elements.drawStudentsButton.textContent = state.gamePhase === "completed" ? "Acak murid berikutnya" : "Acak 4 murid";
   elements.finishGameButton.classList.toggle("hidden", state.gamePhase !== "active");
+  elements.continueGameButton.classList.toggle("hidden", state.gamePhase !== "completed" || !allSaved);
 
-  if (state.gamePhase === "ready") elements.gameStatus.textContent = "Siap mengacak nama";
-  if (state.gamePhase === "drawing") elements.gameStatus.textContent = "Nama sedang diacak…";
-  if (state.gamePhase === "active") elements.gameStatus.textContent = "Waktu berjalan · murid mengerjakan di depan kelas";
-  if (state.gamePhase === "scoring") elements.gameStatus.textContent = "Waktu selesai · soal dikunci · masukkan nilai 50–100";
-  if (state.gamePhase === "saved") elements.gameStatus.textContent = "Hasil tersimpan · lanjutkan ke empat murid berikutnya";
+  const statuses = {
+    ready: "Siap mengacak nama",
+    drawing: "Nama sedang diacak…",
+    active: "Waktu berjalan · tekan tombol saat setiap murid selesai",
+    completing: "Waktu selesai · nilai akhir sedang disimpan",
+    completed: allSaved ? "Semua nilai sudah masuk ke Google Sheet" : "Ada nilai yang belum tersimpan · tekan Coba lagi",
+  };
+  elements.gameStatus.textContent = statuses[state.gamePhase] || statuses.ready;
 
-  elements.gameQuestion.innerHTML = mathText(topic?.SOAL_PRASYARAT || "Soal prasyarat belum tersedia.");
-  if (["ready", "saved"].includes(state.gamePhase) && !state.currentDraw.length) {
-    elements.drawResults.innerHTML = "";
-  } else if (state.gamePhase === "drawing" || state.gamePhase === "active") {
-    elements.drawResults.innerHTML = state.currentDraw.map(function (student, index) {
-      return `<div class="draw-name-card"><span>${index + 1}</span><strong>${escapeHtml(student.NAMA_SISWA)}</strong></div>`;
-    }).join("");
-  } else if (state.gamePhase === "scoring") {
-    elements.drawResults.innerHTML = `${state.currentDraw.map(function (student, index) {
-      return `<div class="draw-score-card" data-draw-student="${escapeAttribute(student.ID_SISWA)}"><div><span>${index + 1}</span><strong>${escapeHtml(student.NAMA_SISWA)}</strong></div><label>Nilai<select data-score="diagnostic">${[50, 60, 70, 80, 90, 100].map(function (score) { return `<option value="${score}"${score === 80 ? " selected" : ""}>${score}</option>`; }).join("")}</select></label></div>`;
-    }).join("")}<button class="light-button save-game-button" type="button" data-save-game>Simpan 4 nilai ke Google Sheet</button>`;
-  }
+  elements.drawResults.innerHTML = state.currentDraw.map(function (student, index) {
+    const question = questions[index] || questions[0] || "Soal prasyarat belum tersedia.";
+    const result = state.gameResults.get(student.ID_SISWA);
+    let footer;
+    if (result?.status === "saving") {
+      footer = `<div class="student-result saving">Menyimpan nilai ${result.score}…</div>`;
+    } else if (result?.status === "saved") {
+      footer = `<div class="student-result"><span>Tersimpan</span><strong class="student-score">${result.score}</strong></div>`;
+    } else if (result?.status === "failed") {
+      footer = `<div class="student-result failed">Gagal tersimpan</div><button class="secondary-button" type="button" data-retry-student="${escapeAttribute(student.ID_SISWA)}">Coba lagi</button>`;
+    } else if (state.gamePhase === "active") {
+      footer = `<div class="student-finish-actions"><button type="button" data-finish-student="${escapeAttribute(student.ID_SISWA)}" data-correct="true">Selesai & benar</button><button type="button" data-finish-student="${escapeAttribute(student.ID_SISWA)}" data-correct="false">Belum benar</button></div>`;
+    } else {
+      footer = `<div class="student-result saving">${state.gamePhase === "drawing" ? "Mengacak…" : "Menunggu…"}</div>`;
+    }
+    return `<article class="draw-question-card" data-draw-student="${escapeAttribute(student.ID_SISWA)}"><header><span>${index + 1}</span><strong title="${escapeAttribute(student.NAMA_SISWA)}">${escapeHtml(student.NAMA_SISWA)}</strong></header><div class="student-question math-content">${mathText(question)}</div>${footer}</article>`;
+  }).join("");
   typesetMath(elements.gameArena);
 }
 
-function drawStudents() {
+async function drawStudents() {
+  if (!selectedTopic()) { showToast("Pilih materi dan submateri terlebih dahulu."); return; }
+  if (!(await ensureTeacher())) return;
   const available = activeStudents().filter(function (student) {
     return (state.attendance[student.ID_SISWA] || "Hadir") === "Hadir" && !state.drawnStudentIds.has(student.ID_SISWA);
   });
-  if (!selectedTopic()) { showToast("Pilih materi dan submateri terlebih dahulu."); return; }
-  if (available.length < 4) { showToast(available.length ? "Murid tersisa kurang dari empat. Tekan Putaran baru." : "Semua murid hadir sudah mendapat giliran."); return; }
+  if (!available.length) { showToast("Semua murid hadir sudah mendapat giliran. Tekan Putaran baru untuk mengulang."); return; }
   resetGame(false);
   state.gamePhase = "drawing";
+  const count = Math.min(4, available.length);
   let turns = 0;
   const rolling = window.setInterval(function () {
-    state.currentDraw = shuffle(available).slice(0, 4);
+    state.currentDraw = shuffle(available).slice(0, count);
     renderGame();
     turns += 1;
     if (turns >= 12) {
       window.clearInterval(rolling);
-      state.currentDraw = shuffle(available).slice(0, 4);
+      state.currentDraw = shuffle(available).slice(0, count);
       state.gamePhase = "active";
       startCountdown();
       renderGame();
@@ -480,24 +533,29 @@ function startCountdown() {
   }, 1000);
 }
 
-function finishGame() {
+async function finishGame() {
   if (state.gamePhase !== "active") return;
   stopGameTimer();
-  state.gamePhase = "scoring";
   state.gameRemaining = 0;
+  state.gamePhase = "completing";
+  const pending = state.currentDraw.filter(function (student) { return !state.gameResults.has(student.ID_SISWA); });
   renderGame();
-  showToast("Waktu selesai. Soal sudah dikunci.");
+  await Promise.all(pending.map(function (student) { return finishStudent(student.ID_SISWA, false, true); }));
+  completeGameIfReady();
+  showToast("Waktu selesai. Murid yang belum selesai mendapat nilai 50.");
 }
 
 function resetDrawRound() {
   state.drawnStudentIds.clear();
   resetGame(false);
+  renderGame();
   showToast("Putaran baru dimulai. Semua murid hadir dapat terpilih kembali.");
 }
 
 function resetGame(render) {
   stopGameTimer();
   state.currentDraw = [];
+  state.gameResults = new Map();
   state.gamePhase = "ready";
   state.gameRemaining = gameLimit();
   state.gameElapsed = 0;
@@ -510,29 +568,88 @@ function stopGameTimer() {
 }
 
 async function onGameClick(event) {
-  if (!event.target.closest("[data-save-game]")) return;
-  if (!(await ensureTeacher())) return;
+  const finishButton = event.target.closest("[data-finish-student]");
+  if (finishButton) {
+    await finishStudent(finishButton.dataset.finishStudent, finishButton.dataset.correct === "true", false);
+    return;
+  }
+  const retryButton = event.target.closest("[data-retry-student]");
+  if (retryButton) await retryDiagnostic(retryButton.dataset.retryStudent);
+}
+
+async function finishStudent(studentId, correct, fromTimeout) {
+  if (state.gameResults.has(studentId)) return;
+  const student = state.currentDraw.find(function (item) { return item.ID_SISWA === studentId; });
+  if (!student) return;
+  const score = correct ? diagnosticScoreFromTime() : 50;
+  const result = { score: score, correct: correct, duration: fromTimeout ? gameLimit() : state.gameElapsed, status: "saving" };
+  state.gameResults.set(studentId, result);
+  renderGame();
+  await saveDiagnosticResult(student, result);
+  completeGameIfReady();
+}
+
+async function saveDiagnosticResult(student, result) {
   const material = selectedMaterial();
   const topic = selectedTopic();
-  const records = state.currentDraw.map(function (student) {
-    const card = elements.drawResults.querySelector(`[data-draw-student="${cssEscape(student.ID_SISWA)}"]`);
-    return {
-      id: makeId("DIAG"), date: elements.attendanceDate.value || localIsoDate(new Date()),
-      classId: state.activeClassId, studentId: student.ID_SISWA, studentName: student.NAMA_SISWA,
-      materialId: material?.ID_MATERI || "", topicId: topic?.ID_SUBMATERI || "",
-      question: topic?.SOAL_PRASYARAT || "", durationSeconds: state.gameElapsed,
-      accuracy: 0, process: 0, timePoints: 0,
-      score: Number(card?.querySelector('[data-score="diagnostic"]')?.value || 50),
-    };
-  });
-  const saved = await performSave({ action: "saveDiagnostics", pin: state.teacherPin, records }, "Empat nilai diagnostik berhasil disimpan sebagai referensi.");
-  if (saved) {
-    state.currentDraw.forEach(function (student) { state.drawnStudentIds.add(student.ID_SISWA); });
-    state.currentDraw = [];
-    state.gamePhase = "saved";
-    state.gameRemaining = gameLimit();
-    renderGame();
+  const index = state.currentDraw.findIndex(function (item) { return item.ID_SISWA === student.ID_SISWA; });
+  const question = prerequisiteQuestions(topic)[Math.max(0, index)] || "";
+  try {
+    const response = await apiPost({
+      action: "saveDiagnostics",
+      pin: state.teacherPin,
+      records: [{
+        id: makeId("DIAG"), date: elements.attendanceDate.value || localIsoDate(new Date()),
+        classId: state.activeClassId, studentId: student.ID_SISWA, studentName: student.NAMA_SISWA,
+        materialId: material?.ID_MATERI || "", topicId: topic?.ID_SUBMATERI || "",
+        question: question, durationSeconds: result.duration,
+        accuracy: result.correct ? 1 : 0, process: 0, timePoints: result.score,
+        score: result.score,
+      }],
+    });
+    if (!response?.ok) throw new Error(response?.error || "Nilai belum tersimpan.");
+    result.status = "saved";
+  } catch (error) {
+    result.status = "failed";
+    result.error = error.message;
   }
+  state.gameResults.set(student.ID_SISWA, result);
+  renderGame();
+}
+
+async function retryDiagnostic(studentId) {
+  const student = state.currentDraw.find(function (item) { return item.ID_SISWA === studentId; });
+  const result = state.gameResults.get(studentId);
+  if (!student || !result) return;
+  result.status = "saving";
+  renderGame();
+  await saveDiagnosticResult(student, result);
+  completeGameIfReady();
+}
+
+function completeGameIfReady() {
+  if (!state.currentDraw.length) return;
+  const finished = state.currentDraw.every(function (student) {
+    return ["saved", "failed"].includes(state.gameResults.get(student.ID_SISWA)?.status);
+  });
+  if (!finished) return;
+  stopGameTimer();
+  state.currentDraw.forEach(function (student) { state.drawnStudentIds.add(student.ID_SISWA); });
+  state.gamePhase = "completed";
+  renderGame();
+}
+
+function diagnosticScoreFromTime() {
+  const ratio = Math.max(0, Math.min(1, state.gameRemaining / gameLimit()));
+  return Math.max(50, Math.min(100, Math.round((50 + ratio * 50) / 5) * 5));
+}
+
+function continueFromGame() {
+  const allSaved = state.currentDraw.length && state.currentDraw.every(function (student) { return state.gameResults.get(student.ID_SISWA)?.status === "saved"; });
+  if (!allSaved) { showToast("Pastikan semua nilai sudah tersimpan terlebih dahulu."); return; }
+  state.lessonStep = Math.max(state.lessonStep, 4);
+  renderLesson();
+  navigate("lesson");
 }
 
 function renderGrades() {
@@ -648,20 +765,22 @@ async function performSave(payload, successMessage) {
   } finally { hideLoading(); }
 }
 
-async function apiGet(action) {
+async function apiGet(action, force) {
   const url = new URL(state.gasUrl);
   url.searchParams.set("action", action);
+  if (force) url.searchParams.set("refresh", "1");
   url.searchParams.set("t", String(Date.now()));
   const response = await fetch(url.toString(), { method: "GET", cache: "no-store", redirect: "follow" });
   if (!response.ok) throw new Error(`Koneksi GAS gagal (${response.status}).`);
   return response.json();
 }
 
-function jsonpGet(action) {
+function jsonpGet(action, force) {
   return new Promise(function (resolve, reject) {
     const callback = `__match9_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const url = new URL(state.gasUrl);
     url.searchParams.set("action", action);
+    if (force) url.searchParams.set("refresh", "1");
     url.searchParams.set("callback", callback);
     url.searchParams.set("t", String(Date.now()));
     const script = document.createElement("script");
@@ -706,6 +825,23 @@ function calculateReport(values, weights) {
 function hasScore(value) { return value !== "" && value !== null && typeof value !== "undefined" && Number.isFinite(Number(value)); }
 function scoreValue(value) { return hasScore(value) ? String(value) : ""; }
 function splitPoints(value) { return String(value || "").split(/\||\n/).map(function (item) { return item.trim(); }).filter(Boolean); }
+
+function prerequisiteQuestions(topic) {
+  if (!topic) return [];
+  const questions = [1, 2, 3, 4].map(function (number) {
+    return String(topic[`SOAL_PRASYARAT_${number}`] || "").trim();
+  }).filter(Boolean);
+  if (questions.length) return questions;
+  const legacy = String(topic.SOAL_PRASYARAT || "").trim();
+  return legacy ? [legacy, legacy, legacy, legacy] : [];
+}
+
+function safeImageUrl(value) {
+  const url = String(value || "").trim();
+  if (!url) return "";
+  if (/^(\.\/|\/|https:\/\/)/i.test(url)) return url;
+  return "";
+}
 
 function shuffle(items) {
   const result = items.slice();

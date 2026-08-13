@@ -12,10 +12,7 @@
     <link rel="stylesheet" href="./style.css" />
     <script>
       window.MathJax = {
-        tex: {
-          inlineMath: [["\\(", "\\)"]],
-          displayMath: [["\\[", "\\]"]],
-        },
+        tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] },
         svg: { fontCache: "global" },
         startup: { typeset: false },
       };
@@ -25,13 +22,26 @@
   <body data-theme="langit">
     <div class="app-shell">
       <header class="topbar">
-        <button class="brand-button" id="brandButton" type="button" aria-label="Kembali ke beranda">
-          <span class="brand-mark" aria-hidden="true">Σ</span>
-          <span><strong id="appName">MATCH-9</strong><small id="schoolName">SMPN 38 Maluku Tengah</small></span>
-        </button>
-        <button class="status-chip draft" id="connectionButton" type="button">
-          <span aria-hidden="true"></span><b id="connectionText">Belum tersambung</b>
-        </button>
+        <div class="brand-wrap">
+          <button class="brand-button" id="brandButton" type="button" aria-expanded="false" aria-controls="mainMenu" aria-label="Buka menu utama">
+            <span class="brand-mark" aria-hidden="true">Σ</span>
+            <span><strong id="appName">MATCH-9</strong><small id="schoolName">SMPN 38 Maluku Tengah</small></span>
+            <span class="menu-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <nav class="brand-menu hidden" id="mainMenu" aria-label="Menu utama">
+            <button type="button" data-go="home"><span aria-hidden="true">⌂</span>Beranda</button>
+            <button type="button" data-go="class"><span aria-hidden="true">人</span>Kelas</button>
+            <button type="button" data-go="grades"><span aria-hidden="true">▥</span>Nilai</button>
+            <button type="button" data-go="settings"><span aria-hidden="true">⚙</span>Atur</button>
+          </nav>
+        </div>
+        <div class="topbar-actions">
+          <button class="header-icon-button" id="homeViewButton" type="button" title="Kembali ke layar awal" aria-label="Kembali ke layar awal">⌂</button>
+          <button class="header-icon-button" id="fullscreenButton" type="button" title="Layar penuh" aria-label="Aktifkan layar penuh">⛶</button>
+          <button class="status-chip draft" id="connectionButton" type="button">
+            <span aria-hidden="true"></span><b id="connectionText">Belum tersambung</b>
+          </button>
+        </div>
       </header>
 
       <main class="app-content">
@@ -53,7 +63,7 @@
           <section class="section-block">
             <div class="section-heading">
               <div><p class="eyebrow">Bahan ajar dari Google Sheet</p><h2>Pilih materi</h2></div>
-              <button class="icon-button" id="refreshButton" type="button" aria-label="Muat ulang data">↻</button>
+              <button class="icon-button" id="refreshButton" type="button" aria-label="Muat ulang data" title="Muat materi terbaru">↻</button>
             </div>
             <div class="material-list" id="materialList"></div>
           </section>
@@ -80,13 +90,13 @@
             <button class="secondary-button" id="markAllPresentButton" type="button">Semua hadir</button>
           </div>
           <div class="section-heading class-heading">
-            <div><p class="eyebrow">Nama sementara</p><h2 id="classCountLabel">0 murid</h2></div>
+            <div><p class="eyebrow">Daftar peserta didik</p><h2 id="classCountLabel">0 murid</h2></div>
             <button class="primary-button small" id="saveAttendanceButton" type="button">Simpan absensi</button>
           </div>
           <div class="student-list" id="studentList"></div>
           <button class="game-launch-card" id="openGameButton" type="button">
             <span class="game-launch-icon" aria-hidden="true">4</span>
-            <span><small>Setelah absensi</small><strong>Buka game prasyarat</strong><em>Acak empat murid dengan batas waktu</em></span>
+            <span><small>Setelah absensi</small><strong>Buka game prasyarat</strong><em>Empat murid mendapat empat soal berbeda</em></span>
             <b aria-hidden="true">›</b>
           </button>
         </section>
@@ -100,22 +110,14 @@
             </div>
             <p class="game-material" id="gameMaterialLabel">Soal mudah sebagai jembatan menuju materi.</p>
             <div class="game-status" id="gameStatus">Siap mengacak nama</div>
-            <div class="game-question-panel hidden" id="gameQuestionPanel">
-              <span class="question-label">Soal untuk dikerjakan</span>
-              <div class="game-question math-content" id="gameQuestion"></div>
-            </div>
             <div class="draw-results" id="drawResults"></div>
             <div class="game-actions">
               <button class="light-button" id="drawStudentsButton" type="button">Acak 4 murid</button>
-              <button class="ghost-light-button hidden" id="finishGameButton" type="button">Akhiri sekarang</button>
+              <button class="ghost-light-button hidden" id="finishGameButton" type="button">Akhiri waktu</button>
               <button class="ghost-light-button" id="resetDrawButton" type="button">Putaran baru</button>
+              <button class="light-button hidden" id="continueGameButton" type="button">Lanjut ke materi →</button>
             </div>
           </section>
-          <div class="rubric-card">
-            <p class="eyebrow">Pedoman nilai diagnostik</p>
-            <p><b>50</b> mencoba · <b>60</b> paham sebagian · <b>70</b> cara cukup benar · <b>80</b> benar dengan arahan · <b>90</b> mandiri · <b>100</b> benar, cepat, dan mampu menjelaskan.</p>
-            <small>Nilai disimpan sebagai bukti diagnostik dan referensi penilaian, bukan langsung menjadi Nilai Rapor.</small>
-          </div>
         </section>
 
         <section class="screen" data-screen="grades">
@@ -160,13 +162,6 @@
           </div>
         </section>
       </main>
-
-      <nav class="bottom-nav" aria-label="Navigasi utama">
-        <button class="active" type="button" data-go="home"><span aria-hidden="true">⌂</span><small>Beranda</small></button>
-        <button type="button" data-go="class"><span aria-hidden="true">人</span><small>Kelas</small></button>
-        <button type="button" data-go="grades"><span aria-hidden="true">▥</span><small>Nilai</small></button>
-        <button type="button" data-go="settings"><span aria-hidden="true">⚙</span><small>Atur</small></button>
-      </nav>
     </div>
 
     <div class="loading-overlay hidden" id="loadingOverlay" role="status" aria-live="polite"><div class="loading-card"><span class="spinner" aria-hidden="true"></span><strong id="loadingText">Memuat data…</strong></div></div>
