@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#17233d" />
+    <meta
+      name="description"
+      content="MATCH-9, ruang ajar dan penilaian Matematika kelas IX SMPN 38 Maluku Tengah."
+    />
+    <meta property="og:title" content="MATCH-9 · Matematika Kelas IX" />
+    <meta
+      property="og:description"
+      content="Materi, absensi, game prasyarat, dan penilaian Matematika kelas IX."
+    />
+    <meta property="og:image" content="./assets/og.png" />
+    <title>MATCH-9 · Matematika Kelas IX</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="brand-button" id="brandButton" type="button" aria-label="Kembali ke beranda">
+          <span class="brand-mark" aria-hidden="true">Σ</span>
+          <span>
+            <strong id="appName">MATCH-9</strong>
+            <small id="schoolName">SMPN 38 Maluku Tengah</small>
+          </span>
+        </button>
+        <button class="status-chip draft" id="connectionButton" type="button">
+          <span aria-hidden="true"></span>
+          <b id="connectionText">Belum tersambung</b>
+        </button>
+      </header>
+
+      <main class="app-content">
+        <section class="screen active" id="screenHome" data-screen="home">
+          <div class="hero-card">
+            <div>
+              <p class="eyebrow light">Ruang ajar Kak Iphoel</p>
+              <h1>Matematika IX</h1>
+              <p id="academicLabel">Materi dan nilai dalam satu layar.</p>
+            </div>
+            <div class="hero-number" aria-hidden="true">9</div>
+          </div>
+
+          <div class="notice-card hidden" id="setupNotice">
+            <span class="notice-icon" aria-hidden="true">!</span>
+            <div>
+              <strong>Sambungkan Google Sheet dahulu</strong>
+              <p>Tempel URL Web App GAS melalui menu Atur. Setelah itu materi akan muncul otomatis.</p>
+              <button class="text-button" type="button" data-go="settings">Buka pengaturan</button>
+            </div>
+          </div>
+
+          <div class="notice-card warning hidden" id="defaultPinNotice">
+            <span class="notice-icon" aria-hidden="true">PIN</span>
+            <div>
+              <strong>PIN awal masih digunakan</strong>
+              <p>Buka Google Sheet, lalu pilih menu SiraMath → Ganti PIN guru.</p>
+            </div>
+          </div>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Bahan ajar dari Google Sheet</p>
+                <h2>Pilih materi</h2>
+              </div>
+              <button class="icon-button" id="refreshButton" type="button" aria-label="Muat ulang data">↻</button>
+            </div>
+            <div class="material-list" id="materialList">
+              <div class="empty-state compact">
+                <span aria-hidden="true">▦</span>
+                <p>Materi akan tampil setelah Google Sheet tersambung.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="summary-grid">
+            <button class="summary-card" type="button" data-go="class">
+              <span class="summary-icon teal" aria-hidden="true">人</span>
+              <span><small>Kelas aktif</small><strong id="homeStudentCount">0 murid</strong></span>
+            </button>
+            <button class="summary-card" type="button" data-go="grades">
+              <span class="summary-icon amber" aria-hidden="true">✓</span>
+              <span><small>Rekap nilai</small><strong id="homeGradeCount">Belum diisi</strong></span>
+            </button>
+          </section>
+        </section>
+
+        <section class="screen" id="screenLesson" data-screen="lesson">
+          <button class="back-button" id="lessonBackButton" type="button">‹ Semua materi</button>
+          <article id="lessonContent"></article>
+        </section>
+
+        <section class="screen" id="screenClass" data-screen="class">
+          <div class="page-title">
+            <div>
+              <p class="eyebrow">Kehadiran dan diagnostik</p>
+              <h1>Kelas IX</h1>
+            </div>
+            <span class="date-badge" id="todayLabel"></span>
+          </div>
+
+          <div class="toolbar-card">
+            <label>
+              <span>Tanggal pertemuan</span>
+              <input id="attendanceDate" type="date" />
+            </label>
+            <button class="secondary-button" id="markAllPresentButton" type="button">Semua hadir</button>
+          </div>
+
+          <div class="section-heading class-heading">
+            <div>
+              <p class="eyebrow">Daftar sementara</p>
+              <h2 id="classCountLabel">0 murid</h2>
+            </div>
+            <button class="primary-button small" id="saveAttendanceButton" type="button">Simpan absensi</button>
+          </div>
+          <div class="student-list" id="studentList"></div>
+
+          <section class="game-card">
+            <div class="game-heading">
+              <div>
+                <p class="eyebrow light">Game prasyarat</p>
+                <h2>Acak tiga murid</h2>
+              </div>
+              <strong class="timer" id="gameTimer">00:00</strong>
+            </div>
+            <p>Murid yang tidak hadir dan yang sudah mendapat giliran tidak akan terpilih.</p>
+            <div class="game-actions">
+              <button class="light-button" id="drawStudentsButton" type="button">Acak sekarang</button>
+              <button class="ghost-light-button" id="resetDrawButton" type="button">Ulangi putaran</button>
+            </div>
+            <div class="draw-results" id="drawResults"></div>
+          </section>
+        </section>
+
+        <section class="screen" id="screenGrades" data-screen="grades">
+          <div class="page-title">
+            <div>
+              <p class="eyebrow">Penilaian objektif</p>
+              <h1>Buku nilai</h1>
+            </div>
+            <button class="primary-button small" id="saveGradesButton" type="button">Simpan</button>
+          </div>
+
+          <div class="weight-strip" id="weightStrip"></div>
+          <p class="helper-text">Geser tabel ke samping untuk melihat semua komponen. NR muncul setelah lima nilai terisi.</p>
+
+          <div class="table-wrap">
+            <table class="grade-table">
+              <thead>
+                <tr>
+                  <th>Murid</th>
+                  <th>NF</th>
+                  <th>NSLM</th>
+                  <th>Nontes</th>
+                  <th>STS</th>
+                  <th>SAS</th>
+                  <th>NR</th>
+                </tr>
+              </thead>
+              <tbody id="gradeTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="screen" id="screenSettings" data-screen="settings">
+          <div class="page-title">
+            <div>
+              <p class="eyebrow">Koneksi aplikasi</p>
+              <h1>Pengaturan</h1>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-title">
+              <span class="summary-icon indigo" aria-hidden="true">G</span>
+              <div>
+                <strong>Alamat Web App GAS</strong>
+                <small>Alamat biasanya berakhiran /exec</small>
+              </div>
+            </div>
+            <label class="stacked-field">
+              <span>URL Google Apps Script</span>
+              <input id="gasUrlInput" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/.../exec" />
+            </label>
+            <div class="button-row">
+              <button class="primary-button" id="saveUrlButton" type="button">Simpan & sambungkan</button>
+              <button class="secondary-button" id="clearCacheButton" type="button">Muat data terbaru</button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-title">
+              <span class="summary-icon amber" aria-hidden="true">PIN</span>
+              <div>
+                <strong>Mode guru</strong>
+                <small>PIN tidak disimpan setelah halaman ditutup</small>
+              </div>
+            </div>
+            <p>Mode guru diperlukan untuk melihat pembahasan, menyimpan absensi, hasil diagnostik, dan nilai.</p>
+            <button class="secondary-button" id="teacherModeButton" type="button">Buka mode guru</button>
+            <span class="teacher-state" id="teacherState">Mode guru terkunci</span>
+          </div>
+
+          <div class="settings-card guidance-card">
+            <div class="settings-title">
+              <span class="summary-icon teal" aria-hidden="true">?</span>
+              <div>
+                <strong>Urutan pemasangan</strong>
+                <small>Cukup dilakukan satu kali</small>
+              </div>
+            </div>
+            <ol>
+              <li>Buat Google Sheet kosong.</li>
+              <li>Tempel Code.gs dan jalankan <b>siapkanSiraMath</b>.</li>
+              <li>Ganti PIN melalui menu SiraMath di Google Sheet.</li>
+              <li>Deploy GAS sebagai Web app dan tempel alamatnya di atas.</li>
+            </ol>
+          </div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="Navigasi utama">
+        <button class="active" type="button" data-go="home"><span aria-hidden="true">⌂</span><small>Beranda</small></button>
+        <button type="button" data-go="class"><span aria-hidden="true">人</span><small>Kelas</small></button>
+        <button type="button" data-go="grades"><span aria-hidden="true">▥</span><small>Nilai</small></button>
+        <button type="button" data-go="settings"><span aria-hidden="true">⚙</span><small>Atur</small></button>
+      </nav>
+    </div>
+
+    <div class="loading-overlay hidden" id="loadingOverlay" role="status" aria-live="polite">
+      <div class="loading-card"><span class="spinner" aria-hidden="true"></span><strong id="loadingText">Memuat data…</strong></div>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./config.js"></script>
+    <script src="./script.js" defer></script>
+  </body>
+</html>
