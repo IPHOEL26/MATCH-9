@@ -23,6 +23,9 @@ Versi penyempurnaan memiliki:
 - pilihan kelas 9-4 dan 9-2;
 - game prasyarat empat murid dengan empat soal berbeda;
 - nilai diagnostik 50–100 yang muncul dan tersimpan saat murid selesai;
+- pemeriksaan kategori Jago, Standar, dan Cemen serta tombol perbaikan;
+- reset nilai tes per kelas dan submateri dengan konfirmasi;
+- input nilai tugas lapangan dengan penanda murid yang belum dinilai;
 - pemuatan cepat melalui cache lokal dan cache Google Apps Script.
 
 Panduan lengkap terdapat pada `../PANDUAN-MATCH-9.md` di komputer Kak Iphoel.

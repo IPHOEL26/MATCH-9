@@ -2,7 +2,7 @@
 
 const MATCH9_KEYS = {
   gasUrl: "match9-gas-url-v1",
-  publicCache: "match9-public-cache-v3",
+  publicCache: "match9-public-cache-v4",
   theme: "match9-theme-v1",
 };
 
@@ -24,6 +24,7 @@ const state = {
   gameRemaining: 180,
   gameElapsed: 0,
   gameResults: new Map(),
+  assessmentData: null,
 };
 
 const elements = {};
@@ -58,10 +59,10 @@ function cacheElements() {
     "saveAttendanceButton", "classCountLabel", "studentList", "openGameButton", "gameBackButton",
     "gameArena", "gameTopicLabel", "gameMaterialLabel", "gameTimer", "gameStatus",
     "drawStudentsButton", "finishGameButton", "continueGameButton",
-    "resetDrawButton", "drawResults", "weightStrip", "gradeTableBody", "saveGradesButton",
+    "reviewScoresButton", "resetDrawButton", "drawResults", "weightStrip", "gradeTableBody", "saveGradesButton",
     "gasUrlInput", "saveUrlButton", "clearCacheButton", "teacherModeButton", "teacherState",
     "themePicker", "loadingOverlay", "loadingText", "toast", "brandButton", "mainMenu",
-    "homeViewButton", "fullscreenButton",
+    "homeViewButton", "fullscreenButton", "teacherModal",
   ].forEach(function (id) { elements[id] = document.getElementById(id); });
 }
 
@@ -74,7 +75,11 @@ function bindEvents() {
   document.addEventListener("click", function (event) {
     if (!event.target.closest(".brand-wrap")) closeMainMenu();
   });
-  document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeMainMenu(); });
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    closeMainMenu();
+    closeTeacherModal();
+  });
   elements.homeViewButton.addEventListener("click", function () { navigate("home"); });
   elements.fullscreenButton.addEventListener("click", toggleFullscreen);
   document.addEventListener("fullscreenchange", updateFullscreenButton);
@@ -96,8 +101,11 @@ function bindEvents() {
   elements.drawStudentsButton.addEventListener("click", drawStudents);
   elements.finishGameButton.addEventListener("click", finishGame);
   elements.resetDrawButton.addEventListener("click", resetDrawRound);
+  elements.reviewScoresButton.addEventListener("click", openDiagnosticReview);
   elements.continueGameButton.addEventListener("click", continueFromGame);
   elements.drawResults.addEventListener("click", onGameClick);
+  elements.teacherModal.addEventListener("click", onTeacherModalClick);
+  elements.teacherModal.addEventListener("input", onTeacherModalInput);
   elements.gradeTableBody.addEventListener("input", onGradeInput);
   elements.saveGradesButton.addEventListener("click", saveGrades);
   elements.saveUrlButton.addEventListener("click", saveGasUrl);
@@ -379,6 +387,7 @@ function lessonStages(topic, teacher) {
   stages.push({
     kicker: "Tugas lapangan", icon: "⌖", title: "Matematika di sekitar kita",
     html: `<div class="focus-question field-task">${mathText(topic.PR || "Tugas lapangan belum diisi.")}</div>${answerControl("homework-answer", teacher?.JAWABAN_PR || "", "Lihat pedoman penilaian")}`,
+    action: `<div class="stage-action-row"><button class="stage-action-button field-score-button" type="button" data-open-field-scores>Input nilai tugas</button><span>Nilai kosong akan ditandai “Belum dinilai”.</span></div>`,
   });
   return stages;
 }
@@ -413,6 +422,7 @@ async function onLessonClick(event) {
     }
     return;
   }
+  if (event.target.closest("[data-open-field-scores]")) { await openFieldTaskScores(); return; }
   if (event.target.closest("[data-start-game]")) { renderGame(); navigate("game"); }
 }
 
@@ -465,6 +475,7 @@ function renderGame() {
   elements.drawStudentsButton.disabled = state.gamePhase === "drawing";
   elements.drawStudentsButton.textContent = state.gamePhase === "completed" ? "Acak murid berikutnya" : "Acak 4 murid";
   elements.finishGameButton.classList.toggle("hidden", state.gamePhase !== "active");
+  elements.reviewScoresButton.classList.toggle("hidden", state.gamePhase !== "completed" || !allSaved);
   elements.continueGameButton.classList.toggle("hidden", state.gamePhase !== "completed" || !allSaved);
 
   const statuses = {
@@ -650,6 +661,252 @@ function continueFromGame() {
   state.lessonStep = Math.max(state.lessonStep, 4);
   renderLesson();
   navigate("lesson");
+}
+
+async function loadAssessmentData() {
+  const material = selectedMaterial();
+  const topic = selectedTopic();
+  const response = await apiPost({
+    action: "getAssessmentData",
+    pin: state.teacherPin,
+    classId: state.activeClassId,
+    materialId: material?.ID_MATERI || "",
+    topicId: topic?.ID_SUBMATERI || "",
+    semester: Number(state.data?.settings?.SEMESTER_AKTIF || 1),
+  });
+  if (!response?.ok) throw new Error(response?.error || "Data penilaian belum dapat dibaca.");
+  state.assessmentData = {
+    diagnostics: response.diagnostics || [],
+    fieldTaskScores: response.fieldTaskScores || [],
+  };
+  return state.assessmentData;
+}
+
+async function openDiagnosticReview() {
+  if (!(await ensureTeacher())) return;
+  showLoading("Mengambil rekap nilai prasyarat…");
+  try {
+    const data = await loadAssessmentData();
+    renderDiagnosticModal(data.diagnostics);
+  } catch (error) {
+    showToast(error.message || "Rekap nilai belum dapat dibuka.");
+  } finally { hideLoading(); }
+}
+
+function bestDiagnosticsByStudent(records) {
+  const best = new Map();
+  (records || []).forEach(function (record) {
+    const studentId = String(record.ID_SISWA || "");
+    const score = Number(record.NILAI_DIAGNOSTIK);
+    if (!studentId || !Number.isFinite(score)) return;
+    const current = best.get(studentId);
+    if (!current) {
+      best.set(studentId, { score: score, attempts: 1, record: record });
+      return;
+    }
+    current.attempts += 1;
+    if (score >= current.score) {
+      current.score = score;
+      current.record = record;
+    }
+  });
+  return best;
+}
+
+function diagnosticCategory(score) {
+  if (Number(score) >= 85) return "jago";
+  if (Number(score) >= 70) return "standar";
+  return "cemen";
+}
+
+function renderDiagnosticModal(records) {
+  const best = bestDiagnosticsByStudent(records);
+  const groups = { jago: [], standar: [], cemen: [] };
+  activeStudents().forEach(function (student) {
+    const result = best.get(student.ID_SISWA);
+    if (result) groups[diagnosticCategory(result.score)].push({ student: student, result: result });
+  });
+  Object.keys(groups).forEach(function (key) {
+    groups[key].sort(function (a, b) { return b.result.score - a.result.score || Number(a.student.NOMOR_URUT) - Number(b.student.NOMOR_URUT); });
+  });
+  const testedIds = new Set(Array.from(best.keys()));
+  const notTested = activeStudents().filter(function (student) { return !testedIds.has(student.ID_SISWA); });
+  const categoryMeta = {
+    jago: { label: "Jago", range: "85–100", icon: "★" },
+    standar: { label: "Standar", range: "70–84", icon: "✓" },
+    cemen: { label: "Cemen", range: "50–69 · perlu perbaikan", icon: "↻" },
+  };
+  const columns = ["jago", "standar", "cemen"].map(function (key) {
+    const meta = categoryMeta[key];
+    const people = groups[key];
+    return `<section class="score-category category-${key}">
+      <header><span>${meta.icon}</span><div><h3>${meta.label}</h3><small>${meta.range} · ${people.length} murid</small></div></header>
+      <div class="score-category-list">${people.length ? people.map(function (item) {
+        const remedial = key === "cemen"
+          ? `<button class="mini-action-button" type="button" data-remedial-student="${escapeAttribute(item.student.ID_SISWA)}">Ulangi / Perbaiki</button>`
+          : "";
+        return `<article class="score-person"><div><strong>${escapeHtml(item.student.NAMA_SISWA)}</strong><small>${item.result.attempts} kali mencoba</small></div><b>${item.result.score}</b>${remedial}</article>`;
+      }).join("") : `<p class="category-empty">Belum ada murid.</p>`}</div>
+    </section>`;
+  }).join("");
+
+  openTeacherModal(`<div class="modal-panel modal-panel-wide">
+    <header class="modal-heading"><div><p class="eyebrow">Rekap tes prasyarat</p><h2 id="teacherModalTitle">Periksa nilai · ${escapeHtml(className())}</h2><p>${escapeHtml(selectedTopic()?.JUDUL || "Submateri")}</p></div><button class="modal-close" type="button" data-close-modal aria-label="Tutup">×</button></header>
+    <div class="privacy-note">Tampilan kategori ini khusus Kak Iphoel. Gunakan secara pribadi agar murid tetap percaya diri.</div>
+    <div class="score-category-grid">${columns}</div>
+    <details class="pending-details"><summary>Belum mengikuti tes: ${notTested.length} murid</summary><p>${notTested.length ? notTested.map(function (student) { return escapeHtml(student.NAMA_SISWA); }).join(" · ") : "Semua murid sudah memiliki nilai."}</p></details>
+    <footer class="modal-actions"><button class="danger-button" type="button" data-reset-diagnostics>Reset nilai kelas & submateri ini</button><button class="primary-button" type="button" data-close-modal>Tutup</button></footer>
+  </div>`);
+}
+
+async function resetDiagnosticsForCurrentTopic() {
+  const topic = selectedTopic();
+  const material = selectedMaterial();
+  if (!topic || !material) return;
+  const confirmed = window.confirm(`Hapus SEMUA nilai tes prasyarat ${className()} untuk submateri “${topic.JUDUL}”?\n\nData akan dihapus dari sheet HASIL_DIAGNOSTIK dan tidak dapat dikembalikan dari aplikasi.`);
+  if (!confirmed) return;
+  showLoading("Menghapus nilai demo dari Google Sheet…");
+  try {
+    const response = await apiPost({
+      action: "deleteDiagnostics",
+      pin: state.teacherPin,
+      classId: state.activeClassId,
+      materialId: material.ID_MATERI,
+      topicId: topic.ID_SUBMATERI,
+    });
+    if (!response?.ok) throw new Error(response?.error || "Nilai belum dapat dihapus.");
+    state.drawnStudentIds.clear();
+    resetGame(false);
+    renderGame();
+    state.assessmentData = { diagnostics: [], fieldTaskScores: state.assessmentData?.fieldTaskScores || [] };
+    renderDiagnosticModal([]);
+    showToast(`${response.deleted || 0} nilai tes prasyarat berhasil dihapus dari Sheet.`);
+  } catch (error) {
+    showToast(error.message || "Nilai belum dapat dihapus.");
+  } finally { hideLoading(); }
+}
+
+function startRemedial(studentId) {
+  const student = activeStudents().find(function (item) { return item.ID_SISWA === studentId; });
+  if (!student) { showToast("Data murid tidak ditemukan."); return; }
+  closeTeacherModal();
+  resetGame(false);
+  state.currentDraw = [student];
+  state.gamePhase = "active";
+  startCountdown();
+  renderGame();
+  navigate("game");
+  showToast(`${student.NAMA_SISWA} mendapat satu kesempatan perbaikan.`);
+}
+
+async function openFieldTaskScores() {
+  if (!(await ensureTeacher())) return;
+  showLoading("Mengambil nilai tugas lapangan…");
+  try {
+    const data = await loadAssessmentData();
+    renderFieldTaskModal(data.fieldTaskScores);
+  } catch (error) {
+    showToast(error.message || "Daftar nilai tugas belum dapat dibuka.");
+  } finally { hideLoading(); }
+}
+
+function renderFieldTaskModal(records) {
+  const scores = new Map((records || []).map(function (record) { return [String(record.ID_SISWA), record]; }));
+  const students = activeStudents();
+  const rows = students.map(function (student, index) {
+    const record = scores.get(student.ID_SISWA) || {};
+    const value = hasScore(record.NILAI) ? String(record.NILAI) : "";
+    return `<label class="field-score-row"><span class="student-number">${escapeHtml(student.NOMOR_URUT || index + 1)}</span><strong>${escapeHtml(student.NAMA_SISWA)}</strong><input type="number" min="0" max="100" inputmode="decimal" value="${escapeAttribute(value)}" data-field-score="${escapeAttribute(student.ID_SISWA)}" aria-label="Nilai tugas ${escapeAttribute(student.NAMA_SISWA)}" /><em data-field-status>${value === "" ? "Belum dinilai" : "Sudah dinilai"}</em></label>`;
+  }).join("");
+  openTeacherModal(`<div class="modal-panel modal-panel-wide">
+    <header class="modal-heading"><div><p class="eyebrow">Tugas lapangan</p><h2 id="teacherModalTitle">Input nilai · ${escapeHtml(className())}</h2><p>${escapeHtml(selectedTopic()?.JUDUL || "Submateri")}</p></div><button class="modal-close" type="button" data-close-modal aria-label="Tutup">×</button></header>
+    <div class="task-score-summary"><strong data-field-summary>0 dinilai · ${students.length} belum dinilai</strong><span>Rata-rata seluruh tugas lapangan semester ini otomatis menjadi nilai Nontes.</span></div>
+    <div class="field-score-list">${rows || emptyState("✓", "Belum ada murid pada kelas ini.")}</div>
+    <footer class="modal-actions"><button class="secondary-button" type="button" data-close-modal>Batal</button><button class="primary-button" type="button" data-save-field-scores>Simpan nilai tugas</button></footer>
+  </div>`);
+  updateFieldScoreSummary();
+}
+
+function updateFieldScoreSummary() {
+  if (elements.teacherModal.classList.contains("hidden")) return;
+  const inputs = Array.from(elements.teacherModal.querySelectorAll("[data-field-score]"));
+  let assessed = 0;
+  inputs.forEach(function (input) {
+    const filled = input.value !== "";
+    if (filled) assessed += 1;
+    const status = input.closest(".field-score-row")?.querySelector("[data-field-status]");
+    if (status) status.textContent = filled ? "Sudah dinilai" : "Belum dinilai";
+  });
+  const summary = elements.teacherModal.querySelector("[data-field-summary]");
+  if (summary) summary.textContent = `${assessed} dinilai · ${inputs.length - assessed} belum dinilai`;
+}
+
+async function saveFieldTaskScores() {
+  const material = selectedMaterial();
+  const topic = selectedTopic();
+  const students = new Map(activeStudents().map(function (student) { return [student.ID_SISWA, student]; }));
+  const records = Array.from(elements.teacherModal.querySelectorAll("[data-field-score]")).filter(function (input) {
+    return input.value !== "";
+  }).map(function (input) {
+    const student = students.get(input.dataset.fieldScore);
+    return {
+      date: elements.attendanceDate.value || localIsoDate(new Date()),
+      classId: state.activeClassId,
+      studentId: student.ID_SISWA,
+      studentName: student.NAMA_SISWA,
+      semester: Number(state.data?.settings?.SEMESTER_AKTIF || 1),
+      materialId: material?.ID_MATERI || "",
+      topicId: topic?.ID_SUBMATERI || "",
+      score: input.value,
+      note: "Tugas lapangan",
+    };
+  });
+  if (!records.length) { showToast("Isi minimal satu nilai sebelum menyimpan."); return; }
+  showLoading("Menyimpan nilai tugas dan memperbarui Nontes…");
+  try {
+    const response = await apiPost({
+      action: "saveFieldTaskScores",
+      pin: state.teacherPin,
+      classId: state.activeClassId,
+      semester: Number(state.data?.settings?.SEMESTER_AKTIF || 1),
+      records: records,
+    });
+    if (!response?.ok) throw new Error(response?.error || "Nilai tugas belum dapat disimpan.");
+    closeTeacherModal();
+    await loadData({ quiet: true, force: true });
+    showToast(`${response.saved || records.length} nilai tugas tersimpan; Nontes sudah diperbarui.`);
+  } catch (error) {
+    showToast(error.message || "Nilai tugas belum dapat disimpan.");
+  } finally { hideLoading(); }
+}
+
+function openTeacherModal(content) {
+  elements.teacherModal.innerHTML = content;
+  elements.teacherModal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+  window.setTimeout(function () { elements.teacherModal.querySelector("[data-close-modal]")?.focus(); }, 0);
+}
+
+function closeTeacherModal() {
+  if (!elements.teacherModal) return;
+  elements.teacherModal.classList.add("hidden");
+  elements.teacherModal.innerHTML = "";
+  document.body.classList.remove("modal-open");
+}
+
+async function onTeacherModalClick(event) {
+  if (event.target === elements.teacherModal || event.target.closest("[data-close-modal]")) { closeTeacherModal(); return; }
+  const remedial = event.target.closest("[data-remedial-student]");
+  if (remedial) { startRemedial(remedial.dataset.remedialStudent); return; }
+  if (event.target.closest("[data-reset-diagnostics]")) { await resetDiagnosticsForCurrentTopic(); return; }
+  if (event.target.closest("[data-save-field-scores]")) await saveFieldTaskScores();
+}
+
+function onTeacherModalInput(event) {
+  const input = event.target.closest("[data-field-score]");
+  if (!input) return;
+  if (input.value !== "") input.value = String(Math.max(0, Math.min(100, Number(input.value))));
+  updateFieldScoreSummary();
 }
 
 function renderGrades() {

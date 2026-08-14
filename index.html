@@ -9,7 +9,7 @@
     <meta property="og:description" content="Materi bertahap, game prasyarat, absensi, dan penilaian Matematika kelas IX." />
     <meta property="og:image" content="./assets/og.png" />
     <title>MATCH-9 · Matematika Kelas IX</title>
-    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./style.css?v=4" />
     <script>
       window.MathJax = {
         tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] },
@@ -115,6 +115,7 @@
               <button class="light-button" id="drawStudentsButton" type="button">Acak 4 murid</button>
               <button class="ghost-light-button hidden" id="finishGameButton" type="button">Akhiri waktu</button>
               <button class="ghost-light-button" id="resetDrawButton" type="button">Putaran baru</button>
+              <button class="light-button hidden" id="reviewScoresButton" type="button">Periksa nilai</button>
               <button class="light-button hidden" id="continueGameButton" type="button">Lanjut ke materi →</button>
             </div>
           </section>
@@ -165,8 +166,9 @@
     </div>
 
     <div class="loading-overlay hidden" id="loadingOverlay" role="status" aria-live="polite"><div class="loading-card"><span class="spinner" aria-hidden="true"></span><strong id="loadingText">Memuat data…</strong></div></div>
+    <div class="modal-backdrop hidden" id="teacherModal" role="dialog" aria-modal="true" aria-labelledby="teacherModalTitle"></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./config.js"></script>
-    <script src="./script.js" defer></script>
+    <script src="./script.js?v=4" defer></script>
   </body>
 </html>
