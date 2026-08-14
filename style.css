@@ -244,6 +244,19 @@ h1, h2, h3 { line-height: 1.12; }
 .large-key-list li::marker { color: var(--primary); }
 .focus-question { padding: clamp(18px, 3vw, 30px); border-left: 7px solid var(--accent); border-radius: 17px; background: color-mix(in srgb, var(--page-a) 52%, white); font-size: clamp(1.35rem, 2.6vw, 2rem); font-weight: 900; }
 .field-task { border-left-color: #f59e0b; background: #fff8df; }
+.bank-empty { padding: clamp(20px,3vw,32px); border: 2px dashed color-mix(in srgb,var(--primary) 28%,white); border-radius: 18px; background: color-mix(in srgb,var(--page-a) 40%,white); }
+.bank-empty strong { display: block; margin-bottom: 7px; color: var(--primary); font-size: clamp(1.25rem,2.3vw,1.8rem); }
+.bank-empty p { margin: 0; color: var(--muted); font-size: 1rem; font-weight: 700; }
+.field-task-empty { border-color: #fbbf24; background: #fffbeb; }
+.bank-question-list { display: grid; gap: 14px; }
+.bank-question-card { padding: 15px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 11px 25px rgba(31,41,80,.07); }
+.bank-question-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.bank-question-card > header span { width: 35px; height: 35px; display: grid; place-items: center; color: #fff; border-radius: 11px; background: var(--primary); font-weight: 900; }
+.bank-question-card > header small, .question-code, .question-identity { color: var(--muted); font-size: .72rem; font-weight: 900; letter-spacing: .04em; }
+.bank-question-card .focus-question { padding: 18px; font-size: clamp(1.12rem,1.8vw,1.45rem); }
+.bank-question-card .reveal-button { margin-top: 12px; }
+.bank-remaining { margin: 14px 0 0; color: #047857; font-size: .88rem; font-weight: 900; }
+.question-identity { display: inline-flex; margin-bottom: 9px; padding: 7px 10px; border-radius: 999px; background: #f1f5f9; }
 .context-layout { display: grid; gap: 22px; align-items: center; }
 .context-image { overflow: hidden; min-height: 250px; border-radius: 21px; background: #e2e8f0; }
 .context-image img { width: 100%; height: 100%; max-height: 500px; display: block; object-fit: cover; }
@@ -290,6 +303,7 @@ select, input { min-height: 46px; padding: 10px 12px; color: var(--ink); border:
 .draw-question-card header { display: flex; align-items: center; gap: 9px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
 .draw-question-card header span { width: 31px; height: 31px; display: grid; flex: 0 0 auto; place-items: center; color: #fff; border-radius: 10px; background: var(--primary); font-weight: 900; }
 .draw-question-card header strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.question-code { display: block; margin-top: 9px; color: #6366f1; }
 .student-question { flex: 1; min-height: 125px; margin: 13px 0; font-size: clamp(1rem, 1.6vw, 1.22rem); font-weight: 900; line-height: 1.45; }
 .student-result { min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px; border-radius: 12px; background: #ecfdf5; color: #047857; font-weight: 900; }
 .student-result.saving { color: #92400e; background: #fffbeb; }
@@ -408,6 +422,7 @@ body.modal-open { overflow: hidden; }
   .summary-grid { max-width: 720px; }
   .teaching-stage { min-height: 500px; }
   .draw-results { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .bank-question-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .student-question { min-height: 155px; }
   .settings-card { max-width: 980px; }
 }

@@ -22,6 +22,9 @@ Versi penyempurnaan memiliki:
 - notasi matematika melalui MathJax;
 - pilihan kelas 9-4 dan 9-2;
 - game prasyarat empat murid dengan empat soal berbeda;
+- bank 100 soal prasyarat per submateri yang tidak berulang antarputaran dan antarkelas;
+- tahap Latihan Bersama yang mengambil lima soal baru setiap kali;
+- 100 variasi tugas lapangan per submateri dengan tugas berbeda untuk tiap kelas;
 - nilai diagnostik 50–100 yang muncul dan tersimpan saat murid selesai;
 - pemeriksaan kategori Jago, Standar, dan Cemen serta tombol perbaikan;
 - reset nilai tes per kelas dan submateri dengan konfirmasi;

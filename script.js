@@ -2,7 +2,7 @@
 
 const MATCH9_KEYS = {
   gasUrl: "match9-gas-url-v1",
-  publicCache: "match9-public-cache-v4",
+  publicCache: "match9-public-cache-v5",
   theme: "match9-theme-v1",
 };
 
@@ -24,6 +24,9 @@ const state = {
   gameRemaining: 180,
   gameElapsed: 0,
   gameResults: new Map(),
+  gameQuestions: new Map(),
+  practiceBatch: null,
+  fieldTaskQuestion: null,
   assessmentData: null,
 };
 
@@ -259,6 +262,8 @@ function onClassChange(event) {
   state.activeClassId = event.target.value;
   state.attendance = {};
   state.drawnStudentIds.clear();
+  state.practiceBatch = null;
+  state.fieldTaskQuestion = null;
   resetGame(false);
   activeStudents().forEach(function (student) { state.attendance[student.ID_SISWA] = "Hadir"; });
   renderClassSelectors();
@@ -298,6 +303,8 @@ function onMaterialClick(event) {
   state.selectedMaterialId = button.dataset.materialId;
   state.selectedTopicId = selectedMaterial()?.topics?.[0]?.ID_SUBMATERI || "";
   state.lessonStep = 0;
+  state.practiceBatch = null;
+  state.fieldTaskQuestion = null;
   resetGame(false);
   renderLesson();
   navigate("lesson");
@@ -346,6 +353,8 @@ function renderLesson() {
 
 function lessonStages(topic, teacher) {
   const points = splitPoints(topic.POIN_PENTING);
+  const practiceBatch = currentPracticeBatch();
+  const fieldTask = currentFieldTaskQuestion();
   const imageUrl = safeImageUrl(topic.GAMBAR_URL);
   const contextImage = imageUrl
     ? `<figure class="context-image"><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(topic.KETERANGAN_GAMBAR || "Ilustrasi hubungan materi dengan kehidupan sehari-hari")}" loading="eager" /><figcaption class="context-caption">${escapeHtml(topic.KETERANGAN_GAMBAR || "Perhatikan situasi pada gambar, lalu hubungkan dengan model matematika.")}</figcaption></figure>`
@@ -377,6 +386,15 @@ function lessonStages(topic, teacher) {
       html: `<div class="focus-question">${mathText(topic[`CONTOH_${number}`])}</div>${answerControl("example-" + number, teacher?.[`CARA_CONTOH_${number}`] || "", "Tampilkan cara kerja")}`,
     });
   });
+  stages.push({
+    kicker: "Latihan bersama", icon: "∞", title: "Kita kuat karena banyak berlatih",
+    html: practiceBatch
+      ? `<div class="bank-question-list">${practiceBatch.items.map(function (item, index) {
+          return `<article class="bank-question-card"><header><span>${index + 1}</span><small>${escapeHtml(item.questionId || "Soal bank")}</small></header><div class="focus-question">${mathText(item.question)}</div>${answerControl("practice-bank-" + index, item.answer || "", "Lihat jawaban")}</article>`;
+        }).join("")}</div><p class="bank-remaining">Masih tersedia ${escapeHtml(practiceBatch.remaining)} soal yang belum pernah dipakai pada submateri ini.</p>`
+      : `<div class="bank-empty"><strong>Bank berisi 100 soal latihan.</strong><p>Ambil lima soal untuk dikerjakan bersama. Set berikutnya tidak mengulang soal yang sudah pernah dibagikan.</p></div>`,
+    action: `<button class="stage-action-button" type="button" data-load-practice>${practiceBatch ? "Ambil 5 soal berikutnya" : "Ambil 5 soal latihan"}</button>`,
+  });
   [1, 2, 3].forEach(function (number) {
     if (!topic[`LATIHAN_${number}`]) return;
     stages.push({
@@ -385,9 +403,11 @@ function lessonStages(topic, teacher) {
     });
   });
   stages.push({
-    kicker: "Tugas lapangan", icon: "⌖", title: "Matematika di sekitar kita",
-    html: `<div class="focus-question field-task">${mathText(topic.PR || "Tugas lapangan belum diisi.")}</div>${answerControl("homework-answer", teacher?.JAWABAN_PR || "", "Lihat pedoman penilaian")}`,
-    action: `<div class="stage-action-row"><button class="stage-action-button field-score-button" type="button" data-open-field-scores>Input nilai tugas</button><span>Nilai kosong akan ditandai “Belum dinilai”.</span></div>`,
+    kicker: "Tugas lapangan", icon: "⌖", title: `Tugas khusus ${className()}`,
+    html: fieldTask
+      ? `<div class="question-identity">${escapeHtml(fieldTask.questionId)} · khusus ${escapeHtml(className())}</div><div class="focus-question field-task">${mathText(fieldTask.question)}</div>${answerControl("homework-bank-answer", fieldTask.answer || "", "Lihat pedoman penilaian")}`
+      : `<div class="bank-empty field-task-empty"><strong>Tugas belum dialokasikan untuk ${escapeHtml(className())}.</strong><p>Tekan tombol di bawah. Server akan memilih satu dari 100 variasi yang belum dipakai kelas lain.</p></div>`,
+    action: `<div class="stage-action-row"><button class="stage-action-button" type="button" data-load-field-task>${fieldTask ? "Ganti variasi tugas" : "Siapkan tugas kelas"}</button><button class="stage-action-button field-score-button" type="button" data-open-field-scores>Input nilai tugas</button><span>Nilai kosong akan ditandai “Belum dinilai”.</span></div>`,
   });
   return stages;
 }
@@ -403,6 +423,8 @@ async function onLessonClick(event) {
   if (topicButton) {
     state.selectedTopicId = topicButton.dataset.topicId;
     state.lessonStep = 0;
+    state.practiceBatch = null;
+    state.fieldTaskQuestion = null;
     resetGame(false);
     renderLesson();
     return;
@@ -411,6 +433,8 @@ async function onLessonClick(event) {
   if (event.target.closest("[data-stage-next]")) { state.lessonStep += 1; renderLesson(); scrollLessonTop(); return; }
   if (event.target.closest("[data-stage-finish]")) { navigate("home"); showToast("Materi selesai. Silakan pilih materi berikutnya."); return; }
   if (event.target.closest("[data-unlock-teacher]")) { await openTeacherMode(); return; }
+  if (event.target.closest("[data-load-practice]")) { await loadPracticeBatch(); return; }
+  if (event.target.closest("[data-load-field-task]")) { await loadFieldTaskQuestion(Boolean(currentFieldTaskQuestion())); return; }
   const reveal = event.target.closest("[data-reveal]");
   if (reveal) {
     const answer = document.getElementById(reveal.dataset.reveal);
@@ -429,6 +453,76 @@ async function onLessonClick(event) {
 function scrollLessonTop() {
   const top = elements.lessonContent.getBoundingClientRect().top + window.scrollY - 78;
   window.scrollTo({ top, behavior: "smooth" });
+}
+
+async function requestBankQuestions(kind, options) {
+  const material = selectedMaterial();
+  const topic = selectedTopic();
+  const response = await apiPost({
+    action: "allocateQuestions",
+    pin: state.teacherPin,
+    classId: state.activeClassId,
+    materialId: material?.ID_MATERI || "",
+    topicId: topic?.ID_SUBMATERI || "",
+    kind: kind,
+    count: Number(options?.count || 1),
+    students: options?.students || [],
+    forceNew: Boolean(options?.forceNew),
+  });
+  if (!response?.ok) throw new Error(response?.error || "Soal belum dapat diambil dari bank.");
+  return response;
+}
+
+async function loadPracticeBatch() {
+  if (!(await ensureTeacher())) return false;
+  showLoading("Mengambil lima soal yang belum pernah dipakai…");
+  try {
+    const response = await requestBankQuestions("LATIHAN_BERSAMA", { count: 5 });
+    state.practiceBatch = {
+      classId: state.activeClassId,
+      materialId: selectedMaterial()?.ID_MATERI || "",
+      topicId: selectedTopic()?.ID_SUBMATERI || "",
+      remaining: response.remaining,
+      items: response.items || [],
+    };
+    renderLesson();
+    scrollLessonTop();
+    showToast("Lima soal latihan baru siap dikerjakan bersama.");
+    return true;
+  } catch (error) {
+    showToast(error.message || "Soal latihan belum dapat diambil.");
+    return false;
+  } finally { hideLoading(); }
+}
+
+async function loadFieldTaskQuestion(forceNew) {
+  if (!(await ensureTeacher())) return false;
+  if (forceNew) {
+    const confirmed = window.confirm(`Ganti tugas lapangan untuk ${className()}? Tugas lama tetap tercatat dalam riwayat soal.`);
+    if (!confirmed) return false;
+  }
+  showLoading(forceNew ? "Memilih variasi tugas yang baru…" : "Menyiapkan tugas khusus kelas…");
+  try {
+    const response = await requestBankQuestions("TUGAS_LAPANGAN", { count: 1, forceNew: forceNew });
+    const item = response.items?.[0];
+    if (!item) throw new Error("Bank tugas belum memberikan soal.");
+    state.fieldTaskQuestion = {
+      classId: state.activeClassId,
+      materialId: selectedMaterial()?.ID_MATERI || "",
+      topicId: selectedTopic()?.ID_SUBMATERI || "",
+      remaining: response.remaining,
+      questionId: item.questionId,
+      question: item.question,
+      answer: item.answer || "",
+    };
+    renderLesson();
+    scrollLessonTop();
+    showToast(response.reused ? `Tugas ${className()} ditampilkan kembali.` : `Tugas baru untuk ${className()} sudah siap.`);
+    return true;
+  } catch (error) {
+    showToast(error.message || "Tugas kelas belum dapat disiapkan.");
+    return false;
+  } finally { hideLoading(); }
 }
 
 function renderClass() {
@@ -480,7 +574,7 @@ function renderGame() {
 
   const statuses = {
     ready: "Siap mengacak nama",
-    drawing: "Nama sedang diacak…",
+    drawing: "Nama dan soal baru sedang disiapkan…",
     active: "Waktu berjalan · tekan tombol saat setiap murid selesai",
     completing: "Waktu selesai · nilai akhir sedang disimpan",
     completed: allSaved ? "Semua nilai sudah masuk ke Google Sheet" : "Ada nilai yang belum tersimpan · tekan Coba lagi",
@@ -488,7 +582,10 @@ function renderGame() {
   elements.gameStatus.textContent = statuses[state.gamePhase] || statuses.ready;
 
   elements.drawResults.innerHTML = state.currentDraw.map(function (student, index) {
-    const question = questions[index] || questions[0] || "Soal prasyarat belum tersedia.";
+    const bankQuestion = state.gameQuestions.get(student.ID_SISWA);
+    const question = bankQuestion?.question || (state.gamePhase === "drawing"
+      ? "Soal baru sedang disiapkan dari bank…"
+      : questions[index] || questions[0] || "Soal prasyarat belum tersedia.");
     const result = state.gameResults.get(student.ID_SISWA);
     let footer;
     if (result?.status === "saving") {
@@ -502,7 +599,7 @@ function renderGame() {
     } else {
       footer = `<div class="student-result saving">${state.gamePhase === "drawing" ? "Mengacak…" : "Menunggu…"}</div>`;
     }
-    return `<article class="draw-question-card" data-draw-student="${escapeAttribute(student.ID_SISWA)}"><header><span>${index + 1}</span><strong title="${escapeAttribute(student.NAMA_SISWA)}">${escapeHtml(student.NAMA_SISWA)}</strong></header><div class="student-question math-content">${mathText(question)}</div>${footer}</article>`;
+    return `<article class="draw-question-card" data-draw-student="${escapeAttribute(student.ID_SISWA)}"><header><span>${index + 1}</span><strong title="${escapeAttribute(student.NAMA_SISWA)}">${escapeHtml(student.NAMA_SISWA)}</strong></header>${bankQuestion?.questionId ? `<small class="question-code">${escapeHtml(bankQuestion.questionId)}</small>` : ""}<div class="student-question math-content">${mathText(question)}</div>${footer}</article>`;
   }).join("");
   typesetMath(elements.gameArena);
 }
@@ -525,11 +622,35 @@ async function drawStudents() {
     if (turns >= 12) {
       window.clearInterval(rolling);
       state.currentDraw = shuffle(available).slice(0, count);
-      state.gamePhase = "active";
-      startCountdown();
+      state.gamePhase = "drawing";
       renderGame();
+      prepareGameQuestions();
     }
   }, 90);
+}
+
+async function prepareGameQuestions() {
+  try {
+    const response = await requestBankQuestions("PRASYARAT", {
+      students: state.currentDraw.map(function (student) {
+        return { studentId: student.ID_SISWA, studentName: student.NAMA_SISWA };
+      }),
+    });
+    state.gameQuestions = new Map((response.items || []).map(function (item) {
+      return [item.studentId, item];
+    }));
+    if (state.gameQuestions.size !== state.currentDraw.length) throw new Error("Jumlah soal dari bank belum lengkap.");
+    state.gamePhase = "active";
+    startCountdown();
+    renderGame();
+    showToast(`Soal unik dibagikan. Masih ada ${response.remaining} soal yang belum pernah dipakai.`);
+  } catch (error) {
+    state.gamePhase = "ready";
+    state.currentDraw = [];
+    state.gameQuestions = new Map();
+    renderGame();
+    showToast(error.message || "Soal prasyarat belum dapat diambil dari bank.");
+  }
 }
 
 function startCountdown() {
@@ -567,6 +688,7 @@ function resetGame(render) {
   stopGameTimer();
   state.currentDraw = [];
   state.gameResults = new Map();
+  state.gameQuestions = new Map();
   state.gamePhase = "ready";
   state.gameRemaining = gameLimit();
   state.gameElapsed = 0;
@@ -604,7 +726,8 @@ async function saveDiagnosticResult(student, result) {
   const material = selectedMaterial();
   const topic = selectedTopic();
   const index = state.currentDraw.findIndex(function (item) { return item.ID_SISWA === student.ID_SISWA; });
-  const question = prerequisiteQuestions(topic)[Math.max(0, index)] || "";
+  const assignedQuestion = state.gameQuestions.get(student.ID_SISWA);
+  const question = assignedQuestion?.question || prerequisiteQuestions(topic)[Math.max(0, index)] || "";
   try {
     const response = await apiPost({
       action: "saveDiagnostics",
@@ -780,27 +903,43 @@ async function resetDiagnosticsForCurrentTopic() {
     renderGame();
     state.assessmentData = { diagnostics: [], fieldTaskScores: state.assessmentData?.fieldTaskScores || [] };
     renderDiagnosticModal([]);
-    showToast(`${response.deleted || 0} nilai tes prasyarat berhasil dihapus dari Sheet.`);
+    showToast(`${response.deleted || 0} nilai dan ${response.releasedQuestions || 0} riwayat soal berhasil dihapus.`);
   } catch (error) {
     showToast(error.message || "Nilai belum dapat dihapus.");
   } finally { hideLoading(); }
 }
 
-function startRemedial(studentId) {
+async function startRemedial(studentId) {
   const student = activeStudents().find(function (item) { return item.ID_SISWA === studentId; });
   if (!student) { showToast("Data murid tidak ditemukan."); return; }
   closeTeacherModal();
   resetGame(false);
   state.currentDraw = [student];
-  state.gamePhase = "active";
-  startCountdown();
+  state.gamePhase = "drawing";
   renderGame();
   navigate("game");
-  showToast(`${student.NAMA_SISWA} mendapat satu kesempatan perbaikan.`);
+  showLoading("Menyiapkan soal perbaikan yang berbeda…");
+  try {
+    const response = await requestBankQuestions("PRASYARAT", {
+      students: [{ studentId: student.ID_SISWA, studentName: student.NAMA_SISWA }],
+    });
+    const item = response.items?.[0];
+    if (!item) throw new Error("Soal perbaikan belum tersedia.");
+    state.gameQuestions = new Map([[student.ID_SISWA, item]]);
+    state.gamePhase = "active";
+    startCountdown();
+    renderGame();
+    showToast(`${student.NAMA_SISWA} mendapat soal baru untuk perbaikan.`);
+  } catch (error) {
+    resetGame(false);
+    renderGame();
+    showToast(error.message || "Soal perbaikan belum dapat disiapkan.");
+  } finally { hideLoading(); }
 }
 
 async function openFieldTaskScores() {
   if (!(await ensureTeacher())) return;
+  if (!currentFieldTaskQuestion() && !(await loadFieldTaskQuestion(false))) return;
   showLoading("Mengambil nilai tugas lapangan…");
   try {
     const data = await loadAssessmentData();
@@ -844,6 +983,7 @@ function updateFieldScoreSummary() {
 async function saveFieldTaskScores() {
   const material = selectedMaterial();
   const topic = selectedTopic();
+  const fieldTask = currentFieldTaskQuestion();
   const students = new Map(activeStudents().map(function (student) { return [student.ID_SISWA, student]; }));
   const records = Array.from(elements.teacherModal.querySelectorAll("[data-field-score]")).filter(function (input) {
     return input.value !== "";
@@ -859,6 +999,8 @@ async function saveFieldTaskScores() {
       topicId: topic?.ID_SUBMATERI || "",
       score: input.value,
       note: "Tugas lapangan",
+      questionId: fieldTask?.questionId || "",
+      question: fieldTask?.question || "",
     };
   });
   if (!records.length) { showToast("Isi minimal satu nilai sebelum menyimpan."); return; }
@@ -897,7 +1039,7 @@ function closeTeacherModal() {
 async function onTeacherModalClick(event) {
   if (event.target === elements.teacherModal || event.target.closest("[data-close-modal]")) { closeTeacherModal(); return; }
   const remedial = event.target.closest("[data-remedial-student]");
-  if (remedial) { startRemedial(remedial.dataset.remedialStudent); return; }
+  if (remedial) { await startRemedial(remedial.dataset.remedialStudent); return; }
   if (event.target.closest("[data-reset-diagnostics]")) { await resetDiagnosticsForCurrentTopic(); return; }
   if (event.target.closest("[data-save-field-scores]")) await saveFieldTaskScores();
 }
@@ -1070,6 +1212,14 @@ function className() {
 
 function selectedMaterial() { return state.data?.materials?.find(function (material) { return material.ID_MATERI === state.selectedMaterialId; }) || null; }
 function selectedTopic() { return selectedMaterial()?.topics?.find(function (topic) { return topic.ID_SUBMATERI === state.selectedTopicId; }) || null; }
+function currentPracticeBatch() {
+  const batch = state.practiceBatch;
+  return batch && batch.classId === state.activeClassId && batch.materialId === state.selectedMaterialId && batch.topicId === state.selectedTopicId ? batch : null;
+}
+function currentFieldTaskQuestion() {
+  const task = state.fieldTaskQuestion;
+  return task && task.classId === state.activeClassId && task.materialId === state.selectedMaterialId && task.topicId === state.selectedTopicId ? task : null;
+}
 function activeStudents() { return (state.data?.students || []).filter(function (student) { return student.ID_KELAS === state.activeClassId && String(student.AKTIF).toUpperCase() !== "FALSE"; }).sort(function (a, b) { return Number(a.NOMOR_URUT || 0) - Number(b.NOMOR_URUT || 0); }); }
 function currentGrades() { const semester = String(state.data?.settings?.SEMESTER_AKTIF || 1); return (state.data?.grades || []).filter(function (grade) { return grade.ID_KELAS === state.activeClassId && String(grade.SEMESTER) === semester; }); }
 function gameLimit() { return Math.max(30, Number(state.data?.settings?.DURASI_GAME_DETIK || 180)); }
