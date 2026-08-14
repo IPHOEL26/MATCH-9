@@ -29,6 +29,11 @@ Versi penyempurnaan memiliki:
 - pemeriksaan kategori Jago, Standar, dan Cemen serta tombol perbaikan;
 - reset nilai tes per kelas dan submateri dengan konfirmasi;
 - input nilai tugas lapangan dengan penanda murid yang belum dinilai;
+- tombol cepat `＋` untuk jawaban lisan, dikte, keaktifan, dan kemampuan menjelaskan;
+- input manual STS/SAS dari halaman depan;
+- perhitungan otomatis TP, LM, NF, NSLM, Nontes, Nilai Asli, dan NR;
+- rekap dengan peringatan tugas, Nontes, STS, atau SAS yang belum lengkap;
+- tombol untuk menyiapkan format nilai cetak di Google Sheet;
 - pemuatan cepat melalui cache lokal dan cache Google Apps Script.
 
 Panduan lengkap terdapat pada `../PANDUAN-MATCH-9.md` di komputer Kak Iphoel.

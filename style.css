@@ -125,6 +125,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 4px s
   font-weight: 900;
   box-shadow: 0 8px 18px rgba(31,41,80,.07);
 }
+.quick-score-button { color: #fff; border-color: var(--primary); background: linear-gradient(145deg,var(--primary),var(--primary-dark)); }
 .status-chip {
   min-height: 40px;
   display: inline-flex;
@@ -322,14 +323,24 @@ select, input { min-height: 46px; padding: 10px 12px; color: var(--ink); border:
 .weight-item { flex: 0 0 auto; padding: 8px 11px; color: var(--primary); border: 1px solid var(--line); border-radius: 999px; background: #fff; font-size: .82rem; }
 .helper-text { color: var(--muted); font-size: .88rem; }
 .table-wrap { overflow-x: auto; border-radius: 20px; }
-.grade-table { width: 100%; min-width: 760px; border-collapse: collapse; }
+.page-title-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.grade-table { width: 100%; min-width: 1180px; border-collapse: collapse; }
 .grade-table th, .grade-table td { padding: 12px; border-bottom: 1px solid #e7ebf2; text-align: center; }
 .grade-table th { color: #fff; background: var(--ink); font-size: .8rem; }
 .grade-table td:first-child { min-width: 190px; text-align: left; }
 .grade-table td:first-child strong, .grade-table td:first-child small { display: block; }
 .grade-table td:first-child small { color: var(--muted); }
-.grade-input { width: 76px; min-height: 42px; text-align: center; }
+.grade-incomplete { background: #fffdf5; }
+.grade-complete { background: #f8fffb; }
+.grade-value, .original-score { display: inline-grid; min-width: 44px; min-height: 38px; place-items: center; border-radius: 11px; background: #f1f5f9; font-weight: 900; }
+.original-score { color: #1d4ed8; background: #dbeafe; }
 .report-score { display: inline-grid; min-width: 48px; height: 42px; place-items: center; color: #fff; border-radius: 12px; background: var(--primary); font-weight: 900; }
+.progress-pill { display: inline-flex; padding: 7px 10px; color: #0f766e; border-radius: 999px; background: #ccfbf1; font-size: .82rem; font-weight: 900; }
+.completion-status { display: inline-flex; max-width: 260px; padding: 7px 10px; border-radius: 11px; font-size: .78rem; font-weight: 900; line-height: 1.35; text-align: left; }
+.completion-status.complete { color: #047857; background: #d1fae5; }
+.completion-status.missing { color: #9a3412; background: #ffedd5; }
+.grade-table td:last-child { min-width: 220px; }
+.grade-table td:last-child small { display: block; margin-top: 5px; color: #7c3aed; font-weight: 900; }
 
 .settings-card { margin-bottom: 15px; }
 .settings-title { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
@@ -348,7 +359,7 @@ select, input { min-height: 46px; padding: 10px 12px; color: var(--ink); border:
 .primary-button, .secondary-button { min-height: 47px; padding: 11px 17px; border-radius: 13px; font-weight: 900; }
 .primary-button { color: #fff; border: 0; background: linear-gradient(135deg,var(--primary),var(--primary-dark)); }
 .secondary-button { color: var(--primary); border: 1px solid color-mix(in srgb,var(--primary) 25%,white); background: #fff; }
-.primary-button.small { min-height: 40px; padding: 8px 13px; }
+.primary-button.small, .secondary-button.small { min-height: 40px; padding: 8px 13px; }
 .teacher-state { display: inline-block; margin: 11px 0 0 8px; color: #9f1239; font-size: .84rem; font-weight: 900; }
 .teacher-state.unlocked { color: #047857; }
 .empty-state { display: grid; min-height: 170px; place-items: center; padding: 25px; color: var(--muted); text-align: center; }
@@ -395,6 +406,14 @@ body.modal-open { overflow: hidden; }
 .field-score-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .field-score-row input { width: 88px; min-height: 42px; text-align: center; }
 .field-score-row em { color: #b45309; font-size: .76rem; font-style: normal; font-weight: 900; text-align: right; }
+.quick-score-form { display: grid; gap: 13px; }
+.quick-score-form label { display: grid; gap: 6px; color: var(--muted); font-size: .8rem; font-weight: 900; }
+.modal-helper { margin: 14px 0 0; padding: 11px 13px; color: #5b21b6; border: 1px solid #ddd6fe; border-radius: 13px; background: #f5f3ff; font-size: .84rem; font-weight: 800; }
+.summative-score-list { display: grid; gap: 8px; }
+.summative-score-row { display: grid; grid-template-columns: 38px minmax(210px,1fr) 94px 94px; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: #f8fafc; }
+.summative-score-row > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.summative-score-row label { display: grid; gap: 3px; color: var(--muted); font-size: .7rem; font-weight: 900; text-align: center; }
+.summative-score-row input { width: 94px; min-height: 41px; text-align: center; }
 
 .loading-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(15,23,42,.45); backdrop-filter: blur(5px); }
 .loading-card { display: flex; align-items: center; gap: 13px; padding: 17px 21px; border-radius: 18px; background: #fff; box-shadow: 0 25px 60px rgba(0,0,0,.22); }
@@ -419,7 +438,7 @@ body.modal-open { overflow: hidden; }
   .topbar { top: 18px; padding: 13px 28px; border-radius: 31px 31px 0 0; }
   .app-content { padding: 31px 34px 62px; }
   .material-list { grid-template-columns: 1fr 1fr; }
-  .summary-grid { max-width: 720px; }
+  .summary-grid { grid-template-columns: repeat(3,minmax(0,1fr)); max-width: 1080px; }
   .teaching-stage { min-height: 500px; }
   .draw-results { grid-template-columns: repeat(4,minmax(0,1fr)); }
   .bank-question-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
@@ -458,6 +477,10 @@ body.modal-open { overflow: hidden; }
   .field-score-row { grid-template-columns: 35px minmax(0,1fr) 76px; }
   .field-score-row input { width: 76px; }
   .field-score-row em { grid-column: 2 / -1; text-align: left; }
+  .page-title { align-items: flex-start; }
+  .page-title-actions { display: grid; grid-template-columns: 1fr; }
+  .summative-score-row { grid-template-columns: 35px minmax(0,1fr) 78px 78px; gap: 7px; }
+  .summative-score-row input { width: 78px; }
 }
 
 @media (display-mode: fullscreen) {

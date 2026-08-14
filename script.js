@@ -2,7 +2,7 @@
 
 const MATCH9_KEYS = {
   gasUrl: "match9-gas-url-v1",
-  publicCache: "match9-public-cache-v5",
+  publicCache: "match9-public-cache-v6",
   theme: "match9-theme-v1",
 };
 
@@ -62,10 +62,11 @@ function cacheElements() {
     "saveAttendanceButton", "classCountLabel", "studentList", "openGameButton", "gameBackButton",
     "gameArena", "gameTopicLabel", "gameMaterialLabel", "gameTimer", "gameStatus",
     "drawStudentsButton", "finishGameButton", "continueGameButton",
-    "reviewScoresButton", "resetDrawButton", "drawResults", "weightStrip", "gradeTableBody", "saveGradesButton",
+    "reviewScoresButton", "resetDrawButton", "drawResults", "weightStrip", "gradeTableBody",
     "gasUrlInput", "saveUrlButton", "clearCacheButton", "teacherModeButton", "teacherState",
     "themePicker", "loadingOverlay", "loadingText", "toast", "brandButton", "mainMenu",
-    "homeViewButton", "fullscreenButton", "teacherModal",
+    "homeViewButton", "fullscreenButton", "teacherModal", "quickNontesButton", "menuSummativeButton",
+    "openSummativeButton", "openSummativeFromGradesButton", "refreshPrintFormatButton",
   ].forEach(function (id) { elements[id] = document.getElementById(id); });
 }
 
@@ -84,6 +85,11 @@ function bindEvents() {
     closeTeacherModal();
   });
   elements.homeViewButton.addEventListener("click", function () { navigate("home"); });
+  elements.quickNontesButton.addEventListener("click", openQuickNontes);
+  elements.menuSummativeButton.addEventListener("click", openSummativeScores);
+  elements.openSummativeButton.addEventListener("click", openSummativeScores);
+  elements.openSummativeFromGradesButton.addEventListener("click", openSummativeScores);
+  elements.refreshPrintFormatButton.addEventListener("click", refreshPrintFormats);
   elements.fullscreenButton.addEventListener("click", toggleFullscreen);
   document.addEventListener("fullscreenchange", updateFullscreenButton);
   elements.connectionButton.addEventListener("click", function () {
@@ -109,8 +115,6 @@ function bindEvents() {
   elements.drawResults.addEventListener("click", onGameClick);
   elements.teacherModal.addEventListener("click", onTeacherModalClick);
   elements.teacherModal.addEventListener("input", onTeacherModalInput);
-  elements.gradeTableBody.addEventListener("input", onGradeInput);
-  elements.saveGradesButton.addEventListener("click", saveGrades);
   elements.saveUrlButton.addEventListener("click", saveGasUrl);
   elements.clearCacheButton.addEventListener("click", function () { loadData({ force: true }); });
   elements.teacherModeButton.addEventListener("click", openTeacherMode);
@@ -955,11 +959,11 @@ function renderFieldTaskModal(records) {
   const rows = students.map(function (student, index) {
     const record = scores.get(student.ID_SISWA) || {};
     const value = hasScore(record.NILAI) ? String(record.NILAI) : "";
-    return `<label class="field-score-row"><span class="student-number">${escapeHtml(student.NOMOR_URUT || index + 1)}</span><strong>${escapeHtml(student.NAMA_SISWA)}</strong><input type="number" min="0" max="100" inputmode="decimal" value="${escapeAttribute(value)}" data-field-score="${escapeAttribute(student.ID_SISWA)}" aria-label="Nilai tugas ${escapeAttribute(student.NAMA_SISWA)}" /><em data-field-status>${value === "" ? "Belum dinilai" : "Sudah dinilai"}</em></label>`;
+    return `<label class="field-score-row"><span class="student-number">${escapeHtml(student.NOMOR_URUT || index + 1)}</span><strong>${escapeHtml(student.NAMA_SISWA)}</strong><input type="number" min="0" max="120" inputmode="decimal" value="${escapeAttribute(value)}" data-field-score="${escapeAttribute(student.ID_SISWA)}" aria-label="Nilai tugas ${escapeAttribute(student.NAMA_SISWA)}" /><em data-field-status>${value === "" ? "Belum dinilai" : "Sudah dinilai"}</em></label>`;
   }).join("");
   openTeacherModal(`<div class="modal-panel modal-panel-wide">
     <header class="modal-heading"><div><p class="eyebrow">Tugas lapangan</p><h2 id="teacherModalTitle">Input nilai · ${escapeHtml(className())}</h2><p>${escapeHtml(selectedTopic()?.JUDUL || "Submateri")}</p></div><button class="modal-close" type="button" data-close-modal aria-label="Tutup">×</button></header>
-    <div class="task-score-summary"><strong data-field-summary>0 dinilai · ${students.length} belum dinilai</strong><span>Rata-rata seluruh tugas lapangan semester ini otomatis menjadi nilai Nontes.</span></div>
+    <div class="task-score-summary"><strong data-field-summary>0 dinilai · ${students.length} belum dinilai</strong><span>Nilai tugas menjadi bukti utama TP. Nilai 101–120 tetap tersimpan sebagai bukti unggul, tetapi perhitungan akademik dibatasi 100.</span></div>
     <div class="field-score-list">${rows || emptyState("✓", "Belum ada murid pada kelas ini.")}</div>
     <footer class="modal-actions"><button class="secondary-button" type="button" data-close-modal>Batal</button><button class="primary-button" type="button" data-save-field-scores>Simpan nilai tugas</button></footer>
   </div>`);
@@ -1004,7 +1008,7 @@ async function saveFieldTaskScores() {
     };
   });
   if (!records.length) { showToast("Isi minimal satu nilai sebelum menyimpan."); return; }
-  showLoading("Menyimpan nilai tugas dan memperbarui Nontes…");
+  showLoading("Menyimpan nilai tugas dan memperbarui TP…");
   try {
     const response = await apiPost({
       action: "saveFieldTaskScores",
@@ -1016,7 +1020,7 @@ async function saveFieldTaskScores() {
     if (!response?.ok) throw new Error(response?.error || "Nilai tugas belum dapat disimpan.");
     closeTeacherModal();
     await loadData({ quiet: true, force: true });
-    showToast(`${response.saved || records.length} nilai tugas tersimpan; Nontes sudah diperbarui.`);
+    showToast(`${response.saved || records.length} nilai tugas tersimpan; TP, LM, dan rekap sudah diperbarui.`);
   } catch (error) {
     showToast(error.message || "Nilai tugas belum dapat disimpan.");
   } finally { hideLoading(); }
@@ -1041,14 +1045,22 @@ async function onTeacherModalClick(event) {
   const remedial = event.target.closest("[data-remedial-student]");
   if (remedial) { await startRemedial(remedial.dataset.remedialStudent); return; }
   if (event.target.closest("[data-reset-diagnostics]")) { await resetDiagnosticsForCurrentTopic(); return; }
-  if (event.target.closest("[data-save-field-scores]")) await saveFieldTaskScores();
+  if (event.target.closest("[data-save-field-scores]")) { await saveFieldTaskScores(); return; }
+  if (event.target.closest("[data-save-nontes]")) { await saveQuickNontes(); return; }
+  if (event.target.closest("[data-save-summative]")) await saveSummativeScores();
 }
 
 function onTeacherModalInput(event) {
   const input = event.target.closest("[data-field-score]");
-  if (!input) return;
-  if (input.value !== "") input.value = String(Math.max(0, Math.min(100, Number(input.value))));
-  updateFieldScoreSummary();
+  if (input) {
+    if (input.value !== "") input.value = String(Math.max(0, Math.min(120, Number(input.value))));
+    updateFieldScoreSummary();
+    return;
+  }
+  const extended = event.target.closest("[data-nontes-score]");
+  if (extended && extended.value !== "") extended.value = String(Math.max(0, Math.min(120, Number(extended.value))));
+  const summative = event.target.closest("[data-summative-field]");
+  if (summative && summative.value !== "") summative.value = String(Math.max(0, Math.min(100, Number(summative.value))));
 }
 
 function renderGrades() {
@@ -1058,37 +1070,137 @@ function renderGrades() {
   const gradesByStudent = new Map(currentGrades().map(function (grade) { return [grade.ID_SISWA, grade]; }));
   elements.gradeTableBody.innerHTML = students.length ? students.map(function (student) {
     const grade = gradesByStudent.get(student.ID_SISWA) || {};
-    const values = { NF: scoreValue(grade.NF), NSLM: scoreValue(grade.NSLM), NONTES: scoreValue(grade.NONTES), STS: scoreValue(grade.STS), SAS: scoreValue(grade.SAS) };
-    const report = calculateReport(values, weights);
-    return `<tr data-grade-student="${escapeAttribute(student.ID_SISWA)}"><td><strong>${escapeHtml(student.NAMA_SISWA)}</strong><small>${escapeHtml(student.ID_SISWA)}</small></td>${["NF", "NSLM", "NONTES", "STS", "SAS"].map(function (field) { return `<td><input class="grade-input" type="number" min="0" max="100" inputmode="decimal" data-grade-field="${field}" value="${escapeAttribute(values[field])}" aria-label="${field} ${escapeAttribute(student.NAMA_SISWA)}" /></td>`; }).join("")}<td><span class="report-score" data-report-score>${report === null ? "—" : report}</span></td></tr>`;
-  }).join("") : `<tr><td colspan="7">Belum ada murid pada ${escapeHtml(className())}.</td></tr>`;
+    const complete = grade.STATUS_KELENGKAPAN === "Lengkap";
+    return `<tr class="${complete ? "grade-complete" : "grade-incomplete"}" data-grade-student="${escapeAttribute(student.ID_SISWA)}">
+      <td><strong>${escapeHtml(student.NAMA_SISWA)}</strong><small>${escapeHtml(student.ID_SISWA)}</small></td>
+      <td><span class="progress-pill">${escapeHtml(grade.PROGRES_TP || "0/0")}</span></td>
+      ${["NF", "NSLM", "NONTES", "STS", "SAS"].map(function (field) { return `<td><span class="grade-value">${scoreOrDash(grade[field])}</span></td>`; }).join("")}
+      <td><span class="report-score">${scoreOrDash(grade.NR)}</span></td>
+      <td><span class="original-score">${scoreOrDash(grade.NILAI_ASLI)}</span></td>
+      <td><span class="completion-status ${complete ? "complete" : "missing"}">${escapeHtml(grade.STATUS_KELENGKAPAN || "Belum dihitung")}</span>${Number(grade.BUKTI_UNGGUL || 0) ? `<small>${escapeHtml(grade.BUKTI_UNGGUL)} bukti unggul</small>` : ""}</td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="10">Belum ada murid pada ${escapeHtml(className())}.</td></tr>`;
 }
 
-function onGradeInput(event) {
-  const input = event.target.closest("[data-grade-field]");
-  if (!input) return;
-  if (input.value !== "") input.value = String(Math.max(0, Math.min(100, Number(input.value))));
-  updateReportCell(input.closest("[data-grade-student]"));
+function scoreOrDash(value) {
+  return hasScore(value) ? escapeHtml(value) : "—";
 }
 
-function updateReportCell(row) {
-  const values = {};
-  row.querySelectorAll("[data-grade-field]").forEach(function (input) { values[input.dataset.gradeField] = input.value; });
-  const report = calculateReport(values, state.data?.weights || {});
-  row.querySelector("[data-report-score]").textContent = report === null ? "—" : report;
-}
-
-async function saveGrades() {
+async function openQuickNontes() {
   if (!(await ensureTeacher())) return;
-  const studentsById = new Map(activeStudents().map(function (student) { return [student.ID_SISWA, student]; }));
-  const records = Array.from(elements.gradeTableBody.querySelectorAll("[data-grade-student]")).map(function (row) {
-    const student = studentsById.get(row.dataset.gradeStudent);
-    const item = { studentId: student.ID_SISWA, studentName: student.NAMA_SISWA, classId: state.activeClassId, semester: Number(state.data?.settings?.SEMESTER_AKTIF || 1), note: "" };
-    row.querySelectorAll("[data-grade-field]").forEach(function (input) { item[input.dataset.gradeField] = input.value; });
+  const students = activeStudents();
+  const material = selectedMaterial();
+  const topic = selectedTopic();
+  if (!students.length) { showToast(`Belum ada murid aktif pada ${className()}.`); return; }
+  const options = students.map(function (student) {
+    return `<option value="${escapeAttribute(student.ID_SISWA)}">${escapeHtml(student.NOMOR_URUT)} · ${escapeHtml(student.NAMA_SISWA)}</option>`;
+  }).join("");
+  openTeacherModal(`<div class="modal-panel compact-score-modal">
+    <header class="modal-heading"><div><p class="eyebrow">Catatan cepat</p><h2 id="teacherModalTitle">Nilai Nontes · ${escapeHtml(className())}</h2><p>${escapeHtml(topic?.JUDUL || material?.JUDUL || "Kegiatan kelas")}</p></div><button class="modal-close" type="button" data-close-modal aria-label="Tutup">×</button></header>
+    <div class="quick-score-form">
+      <label><span>Nama murid</span><select data-nontes-student>${options}</select></label>
+      <label><span>Jenis bukti</span><select data-nontes-kind><option>Jawab lisan</option><option>Dikte</option><option>Keaktifan</option><option>Menjelaskan cara</option></select></label>
+      <label><span>Nilai 0–120</span><input type="number" min="0" max="120" inputmode="decimal" data-nontes-score placeholder="Contoh: 85" /></label>
+      <label><span>Catatan singkat</span><input type="text" data-nontes-note placeholder="Opsional" /></label>
+    </div>
+    <p class="modal-helper">Nilai 101–120 menjadi tanda bukti unggul. Nilai akademik yang dihitung tetap maksimal 100.</p>
+    <footer class="modal-actions"><button class="secondary-button" type="button" data-close-modal>Batal</button><button class="primary-button" type="button" data-save-nontes>Simpan Nontes</button></footer>
+  </div>`);
+}
+
+async function saveQuickNontes() {
+  const studentId = elements.teacherModal.querySelector("[data-nontes-student]")?.value || "";
+  const student = activeStudents().find(function (item) { return item.ID_SISWA === studentId; });
+  const score = elements.teacherModal.querySelector("[data-nontes-score]")?.value || "";
+  if (!student || score === "") { showToast("Pilih murid dan isi nilai terlebih dahulu."); return; }
+  const kind = elements.teacherModal.querySelector("[data-nontes-kind]")?.value || "Jawab lisan";
+  const note = elements.teacherModal.querySelector("[data-nontes-note]")?.value || "";
+  showLoading("Menyimpan bukti jawaban murid…");
+  try {
+    const response = await apiPost({
+      action: "saveNontes",
+      pin: state.teacherPin,
+      records: [{
+        date: elements.attendanceDate.value || localIsoDate(new Date()),
+        classId: state.activeClassId,
+        studentId: student.ID_SISWA,
+        studentName: student.NAMA_SISWA,
+        semester: Number(state.data?.settings?.SEMESTER_AKTIF || 1),
+        materialId: selectedMaterial()?.ID_MATERI || "",
+        topicId: selectedTopic()?.ID_SUBMATERI || "",
+        kind: kind,
+        score: score,
+        note: note,
+      }],
+    });
+    if (!response?.ok) throw new Error(response?.error || "Nilai Nontes belum dapat disimpan.");
+    closeTeacherModal();
+    await loadData({ quiet: true, force: true });
+    showToast(`Nilai ${kind.toLowerCase()} ${student.NAMA_SISWA} tersimpan.`);
+  } catch (error) {
+    showToast(error.message || "Nilai Nontes belum dapat disimpan.");
+  } finally { hideLoading(); }
+}
+
+async function openSummativeScores() {
+  closeMainMenu();
+  if (!(await ensureTeacher())) return;
+  const grades = new Map(currentGrades().map(function (grade) { return [grade.ID_SISWA, grade]; }));
+  const students = activeStudents();
+  const rows = students.map(function (student, index) {
+    const grade = grades.get(student.ID_SISWA) || {};
+    return `<div class="summative-score-row" data-summative-student="${escapeAttribute(student.ID_SISWA)}">
+      <span class="student-number">${escapeHtml(student.NOMOR_URUT || index + 1)}</span>
+      <strong>${escapeHtml(student.NAMA_SISWA)}</strong>
+      <label><span>STS</span><input type="number" min="0" max="100" inputmode="decimal" data-summative-field="STS" value="${escapeAttribute(scoreValue(grade.STS))}" /></label>
+      <label><span>SAS</span><input type="number" min="0" max="100" inputmode="decimal" data-summative-field="SAS" value="${escapeAttribute(scoreValue(grade.SAS))}" /></label>
+    </div>`;
+  }).join("");
+  openTeacherModal(`<div class="modal-panel modal-panel-wide">
+    <header class="modal-heading"><div><p class="eyebrow">Nilai Sumatif</p><h2 id="teacherModalTitle">Input STS dan SAS · ${escapeHtml(className())}</h2><p>Semester ${escapeHtml(state.data?.settings?.SEMESTER_AKTIF || 1)}</p></div><button class="modal-close" type="button" data-close-modal aria-label="Tutup">×</button></header>
+    <div class="summative-score-list">${rows || emptyState("Σ", "Belum ada murid pada kelas ini.")}</div>
+    <footer class="modal-actions"><button class="secondary-button" type="button" data-close-modal>Batal</button><button class="primary-button" type="button" data-save-summative>Simpan STS/SAS</button></footer>
+  </div>`);
+}
+
+async function saveSummativeScores() {
+  const students = new Map(activeStudents().map(function (student) { return [student.ID_SISWA, student]; }));
+  const records = Array.from(elements.teacherModal.querySelectorAll("[data-summative-student]")).map(function (row) {
+    const student = students.get(row.dataset.summativeStudent);
+    const item = {
+      studentId: student.ID_SISWA,
+      studentName: student.NAMA_SISWA,
+      classId: state.activeClassId,
+      semester: Number(state.data?.settings?.SEMESTER_AKTIF || 1),
+      note: "Input melalui MATCH-9",
+    };
+    row.querySelectorAll("[data-summative-field]").forEach(function (input) { item[input.dataset.summativeField] = input.value; });
     return item;
   });
-  const saved = await performSave({ action: "saveGrades", pin: state.teacherPin, records }, `${records.length} data nilai ${className()} disimpan.`);
-  if (saved) await loadData({ quiet: true });
+  showLoading("Menyimpan STS/SAS dan menghitung ulang nilai…");
+  try {
+    const response = await apiPost({ action: "saveSummativeScores", pin: state.teacherPin, records: records });
+    if (!response?.ok) throw new Error(response?.error || "Nilai STS/SAS belum dapat disimpan.");
+    closeTeacherModal();
+    await loadData({ quiet: true, force: true });
+    navigate("grades");
+    showToast(`${records.length} data STS/SAS ${className()} tersimpan.`);
+  } catch (error) {
+    showToast(error.message || "Nilai STS/SAS belum dapat disimpan.");
+  } finally { hideLoading(); }
+}
+
+async function refreshPrintFormats() {
+  if (!(await ensureTeacher())) return;
+  showLoading("Menyiapkan format nilai untuk IX-2 dan IX-4…");
+  try {
+    const response = await apiPost({ action: "refreshPrintFormats", pin: state.teacherPin });
+    if (!response?.ok) throw new Error(response?.error || "Format cetak belum dapat disiapkan.");
+    await loadData({ quiet: true, force: true });
+    showToast(`${response.count || 0} format nilai siap di Google Sheet. Pilih A4 dan lanskap saat mencetak.`);
+  } catch (error) {
+    showToast(error.message || "Format cetak belum dapat disiapkan.");
+  } finally { hideLoading(); }
 }
 
 function renderSettings() {

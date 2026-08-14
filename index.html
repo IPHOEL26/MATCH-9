@@ -9,7 +9,7 @@
     <meta property="og:description" content="Materi bertahap, game prasyarat, absensi, dan penilaian Matematika kelas IX." />
     <meta property="og:image" content="./assets/og.png" />
     <title>MATCH-9 · Matematika Kelas IX</title>
-    <link rel="stylesheet" href="./style.css?v=5" />
+    <link rel="stylesheet" href="./style.css?v=6" />
     <script>
       window.MathJax = {
         tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] },
@@ -31,11 +31,13 @@
           <nav class="brand-menu hidden" id="mainMenu" aria-label="Menu utama">
             <button type="button" data-go="home"><span aria-hidden="true">⌂</span>Beranda</button>
             <button type="button" data-go="class"><span aria-hidden="true">人</span>Kelas</button>
+            <button type="button" id="menuSummativeButton"><span aria-hidden="true">Σ</span>Input STS/SAS</button>
             <button type="button" data-go="grades"><span aria-hidden="true">▥</span>Nilai</button>
             <button type="button" data-go="settings"><span aria-hidden="true">⚙</span>Atur</button>
           </nav>
         </div>
         <div class="topbar-actions">
+          <button class="header-icon-button quick-score-button" id="quickNontesButton" type="button" title="Catat nilai jawaban murid" aria-label="Catat nilai Nontes">＋</button>
           <button class="header-icon-button" id="homeViewButton" type="button" title="Kembali ke layar awal" aria-label="Kembali ke layar awal">⌂</button>
           <button class="header-icon-button" id="fullscreenButton" type="button" title="Layar penuh" aria-label="Aktifkan layar penuh">⛶</button>
           <button class="status-chip draft" id="connectionButton" type="button">
@@ -70,6 +72,7 @@
 
           <section class="summary-grid">
             <button class="summary-card" type="button" data-go="class"><span class="summary-icon teal" aria-hidden="true">人</span><span><small id="homeClassLabel">Kelas aktif</small><strong id="homeStudentCount">0 murid</strong></span></button>
+            <button class="summary-card" id="openSummativeButton" type="button"><span class="summary-icon rose" aria-hidden="true">Σ</span><span><small>Nilai Sumatif</small><strong>Input STS dan SAS</strong></span></button>
             <button class="summary-card" type="button" data-go="grades"><span class="summary-icon amber" aria-hidden="true">✓</span><span><small>Rekap nilai</small><strong id="homeGradeCount">Belum diisi</strong></span></button>
           </section>
         </section>
@@ -123,15 +126,15 @@
 
         <section class="screen" data-screen="grades">
           <div class="page-title">
-            <div><p class="eyebrow">Penilaian objektif</p><h1>Buku nilai</h1></div>
-            <button class="primary-button small" id="saveGradesButton" type="button">Simpan</button>
+            <div><p class="eyebrow">Penilaian objektif dan dapat dilacak</p><h1>Rekap nilai otomatis</h1></div>
+            <div class="page-title-actions"><button class="secondary-button small" id="refreshPrintFormatButton" type="button">Siapkan format cetak</button><button class="primary-button small" id="openSummativeFromGradesButton" type="button">Input STS/SAS</button></div>
           </div>
           <div class="toolbar-card grade-toolbar"><label><span>Pilih kelas</span><select id="gradeClassSelect"></select></label></div>
           <div class="weight-strip" id="weightStrip"></div>
-          <p class="helper-text">Geser tabel ke samping. NR muncul setelah semua lima komponen terisi.</p>
+          <p class="helper-text">NF, NSLM, dan Nontes dihitung dari bukti belajar. NR baru muncul setelah tugas seluruh TP, Nontes, STS, dan SAS lengkap.</p>
           <div class="table-wrap">
             <table class="grade-table">
-              <thead><tr><th>Murid</th><th>NF</th><th>NSLM</th><th>Nontes</th><th>STS</th><th>SAS</th><th>NR</th></tr></thead>
+              <thead><tr><th>Murid</th><th>Progres TP</th><th>NF</th><th>NSLM</th><th>Nontes</th><th>STS</th><th>SAS</th><th>NR</th><th>Nilai Asli</th><th>Status</th></tr></thead>
               <tbody id="gradeTableBody"></tbody>
             </table>
           </div>
@@ -169,6 +172,6 @@
     <div class="modal-backdrop hidden" id="teacherModal" role="dialog" aria-modal="true" aria-labelledby="teacherModalTitle"></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./config.js"></script>
-    <script src="./script.js?v=5" defer></script>
+    <script src="./script.js?v=6" defer></script>
   </body>
 </html>
