@@ -3,78 +3,149 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#4338ca" />
-    <meta name="description" content="MATCH-9, ruang ajar Matematika kelas IX SMPN 38 Maluku Tengah." />
+    <meta name="theme-color" content="#0b3558" />
+    <meta name="description" content="MATCH-9, aplikasi pembelajaran Matematika Kelas IX SMPN 38 Maluku Tengah." />
     <meta property="og:title" content="MATCH-9 · Matematika Kelas IX" />
-    <meta property="og:description" content="Materi bertahap, game prasyarat, absensi, dan penilaian Matematika kelas IX." />
-    <meta property="og:image" content="./assets/og.png" />
+    <meta property="og:description" content="Materi, presentasi, permainan, tugas, dan penilaian Matematika Kelas IX." />
+    <meta property="og:image" content="./assets/icons/icon-512.png" />
     <title>MATCH-9 · Matematika Kelas IX</title>
-    <link rel="stylesheet" href="./style.css?v=6" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./assets/icons/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./assets/icons/icon-192.png" />
+    <link rel="stylesheet" href="./style.css?v=7.0.0" />
     <script>
       window.MathJax = {
         tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] },
         svg: { fontCache: "global" },
-        startup: { typeset: false },
+        startup: { typeset: false }
       };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-svg.js"></script>
   </head>
   <body data-theme="langit">
+    <a class="skip-link" href="#mainContent">Lewati ke isi</a>
     <div class="app-shell">
       <header class="topbar">
         <div class="brand-wrap">
-          <button class="brand-button" id="brandButton" type="button" aria-expanded="false" aria-controls="mainMenu" aria-label="Buka menu utama">
-            <span class="brand-mark" aria-hidden="true">Σ</span>
+          <button class="brand-button" id="brandButton" type="button" aria-expanded="false" aria-controls="mainMenu" aria-label="Buka menu MATCH-9">
+            <img class="brand-logo" src="./assets/icons/icon-192.png" alt="" />
             <span><strong id="appName">MATCH-9</strong><small id="schoolName">SMPN 38 Maluku Tengah</small></span>
             <span class="menu-chevron" aria-hidden="true">⌄</span>
           </button>
           <nav class="brand-menu hidden" id="mainMenu" aria-label="Menu utama">
             <button type="button" data-go="home"><span aria-hidden="true">⌂</span>Beranda</button>
-            <button type="button" data-go="class"><span aria-hidden="true">人</span>Kelas</button>
-            <button type="button" id="menuSummativeButton"><span aria-hidden="true">Σ</span>Input STS/SAS</button>
-            <button type="button" data-go="grades"><span aria-hidden="true">▥</span>Nilai</button>
-            <button type="button" data-go="settings"><span aria-hidden="true">⚙</span>Atur</button>
+            <button type="button" data-go="presentation"><span aria-hidden="true">▣</span>Mode Presentasi</button>
+            <button type="button" data-go="teacher"><span aria-hidden="true">◎</span>Ruang Guru</button>
+            <button type="button" data-go="student"><span aria-hidden="true">▶</span>Ruang Murid</button>
+            <button type="button" data-go="guest"><span aria-hidden="true">◇</span>Latihan/Tamu</button>
+            <button type="button" id="menuRefreshButton"><span aria-hidden="true">↻</span>Segarkan data</button>
+            <button type="button" id="menuUpdateButton"><span aria-hidden="true">⟳</span>Perbarui aplikasi</button>
+            <button type="button" data-go="settings"><span aria-hidden="true">⚙</span>Pengaturan</button>
           </nav>
         </div>
         <div class="topbar-actions">
-          <button class="header-icon-button quick-score-button" id="quickNontesButton" type="button" title="Catat nilai jawaban murid" aria-label="Catat nilai Nontes">＋</button>
-          <button class="header-icon-button" id="homeViewButton" type="button" title="Kembali ke layar awal" aria-label="Kembali ke layar awal">⌂</button>
-          <button class="header-icon-button" id="fullscreenButton" type="button" title="Layar penuh" aria-label="Aktifkan layar penuh">⛶</button>
-          <button class="status-chip draft" id="connectionButton" type="button">
-            <span aria-hidden="true"></span><b id="connectionText">Belum tersambung</b>
-          </button>
+          <button class="header-icon-button hidden" id="quickPresentationButton" type="button" title="Kembali ke presentasi" aria-label="Kembali ke presentasi">▣</button>
+          <button class="header-icon-button hidden" id="quickTeacherButton" type="button" title="Buka Ruang Guru" aria-label="Buka Ruang Guru">◎</button>
+          <button class="header-icon-button hidden" id="installAppButton" type="button" title="Pasang MATCH-9" aria-label="Pasang aplikasi">＋</button>
+          <button class="status-chip draft" id="connectionButton" type="button"><span aria-hidden="true"></span><b id="connectionText">Memeriksa</b></button>
         </div>
       </header>
 
-      <main class="app-content">
+      <main class="app-content" id="mainContent" tabindex="-1">
         <section class="screen active" data-screen="home">
-          <div class="hero-card">
-            <div><p class="eyebrow light">Ruang ajar Kak Iphoel</p><h1>Matematika IX</h1><p id="academicLabel">Materi dan nilai dalam satu layar.</p></div>
-            <div class="hero-number" aria-hidden="true">9</div>
+          <div class="hero-card hero-v7">
+            <div><p class="eyebrow light">Belajar · Bermain · Memecahkan masalah</p><h1>Matematika IX</h1><p id="academicLabel">Materi dan latihan yang dekat dengan kehidupan kita.</p></div>
+            <img src="./assets/icons/icon-512.png" alt="Logo MATCH-9" />
           </div>
-
-          <div class="notice-card hidden" id="setupNotice">
-            <span class="notice-icon" aria-hidden="true">!</span>
-            <div><strong>Sambungkan Google Sheet dahulu</strong><p>Tempel URL Web App GAS melalui menu Atur.</p><button class="text-button" type="button" data-go="settings">Buka pengaturan</button></div>
-          </div>
-          <div class="notice-card warning hidden" id="defaultPinNotice">
-            <span class="notice-icon" aria-hidden="true">PIN</span>
-            <div><strong>PIN awal masih digunakan</strong><p>Buka Google Sheet, lalu pilih SiraMath → Ganti PIN guru.</p></div>
-          </div>
+          <div class="offline-banner hidden" id="offlineBanner">Koneksi terputus. Materi terakhir tetap dapat dibaca dan kiriman akan menunggu untuk disinkronkan.</div>
+          <div class="sync-banner hidden" id="syncBanner"></div>
+          <div class="notice-card hidden" id="setupNotice"><span class="notice-icon">!</span><div><strong>Sambungkan Google Sheet dahulu</strong><p>Tempel URL Web App GAS melalui menu Pengaturan.</p><button class="text-button" type="button" data-go="settings">Buka pengaturan</button></div></div>
+          <div class="notice-card warning hidden" id="defaultPinNotice"><span class="notice-icon">PIN</span><div><strong>PIN awal masih digunakan</strong><p>Ganti PIN dari menu SiraMath pada Google Sheet.</p></div></div>
 
           <section class="section-block">
-            <div class="section-heading">
-              <div><p class="eyebrow">Bahan ajar dari Google Sheet</p><h2>Pilih materi</h2></div>
-              <button class="icon-button" id="refreshButton" type="button" aria-label="Muat ulang data" title="Muat materi terbaru">↻</button>
+            <div class="section-heading"><div><p class="eyebrow">Pilih jalan masuk</p><h2>Mau melakukan apa?</h2></div><button class="icon-button" id="refreshButton" type="button" aria-label="Segarkan data">↻</button></div>
+            <div class="role-grid">
+              <button class="role-card present" type="button" data-go="presentation"><span>▣</span><strong>Mode Presentasi</strong><small>Bekal Cepat Guru dan layar mengajar bertahap.</small></button>
+              <button class="role-card teacher" type="button" data-go="teacher"><span>◎</span><strong>Ruang Guru</strong><small>Absensi, tugas, pemantauan, nilai, dan akses.</small></button>
+              <button class="role-card student" type="button" data-go="student"><span>▶</span><strong>Ruang Murid</strong><small>Masuk dengan ID dan kode akses pribadi.</small></button>
+              <button class="role-card guest" type="button" data-go="guest"><span>◇</span><strong>Latihan/Tamu</strong><small>Mencoba permainan tanpa menyimpan nilai.</small></button>
             </div>
-            <div class="material-list" id="materialList"></div>
           </section>
 
-          <section class="summary-grid">
-            <button class="summary-card" type="button" data-go="class"><span class="summary-icon teal" aria-hidden="true">人</span><span><small id="homeClassLabel">Kelas aktif</small><strong id="homeStudentCount">0 murid</strong></span></button>
-            <button class="summary-card" id="openSummativeButton" type="button"><span class="summary-icon rose" aria-hidden="true">Σ</span><span><small>Nilai Sumatif</small><strong>Input STS dan SAS</strong></span></button>
-            <button class="summary-card" type="button" data-go="grades"><span class="summary-icon amber" aria-hidden="true">✓</span><span><small>Rekap nilai</small><strong id="homeGradeCount">Belum diisi</strong></span></button>
+          <section class="section-block">
+            <div class="section-heading"><div><p class="eyebrow">Bahan ajar dari Google Sheet</p><h2>Peta materi</h2></div></div>
+            <div class="material-list" id="materialList"></div>
           </section>
+        </section>
+
+        <section class="screen" data-screen="presentation">
+          <div class="page-title presentation-page-title"><div><p class="eyebrow">Layar ajar Kak Iphoel</p><h1>Mode Presentasi</h1><p>Posisi slide tetap tersimpan saat berpindah ke Ruang Guru.</p></div><button class="secondary-button" id="presentationFullscreenButton" type="button">⛶ Layar penuh</button></div>
+          <div class="toolbar-card presentation-toolbar">
+            <label><span>Kelas</span><select id="presentationClassSelect"></select></label>
+            <label><span>Materi</span><select id="presentationMaterialSelect"></select></label>
+            <label><span>TP/Submateri</span><select id="presentationTopicSelect"></select></label>
+            <button class="primary-button" id="startPresentationButton" type="button">Mulai presentasi</button>
+          </div>
+          <div class="presentation-empty" id="presentationEmpty"><span>▣</span><h2>Pilih materi untuk mulai</h2><p>Slide pertama selalu berisi Bekal Cepat Guru.</p></div>
+          <section class="presentation-stage hidden" id="presentationStage">
+            <header><div><small id="presentationKicker">Mode Presentasi</small><strong id="presentationTitle">MATCH-9</strong></div><div><span id="presentationProgress">1 / 1</span><button id="presentationTeacherButton" type="button" title="Buka Ruang Guru">◎</button></div></header>
+            <article id="presentationSlide" class="math-content"></article>
+            <footer><button class="secondary-button" id="presentationPrevButton" type="button">← Sebelumnya</button><div id="presentationDots" class="presentation-dots"></div><button class="primary-button" id="presentationNextButton" type="button">Berikutnya →</button></footer>
+          </section>
+        </section>
+
+        <section class="screen" data-screen="teacher-login">
+          <div class="page-title"><div><p class="eyebrow">Khusus Kak Iphoel</p><h1>Masuk ke Ruang Guru</h1><p>PIN tidak disimpan setelah halaman ditutup.</p></div></div>
+          <form class="auth-card" id="teacherLoginForm"><label><span>PIN guru</span><input id="teacherPinInput" type="password" minlength="4" maxlength="20" required /></label><button class="primary-button" type="submit">Buka Ruang Guru</button></form>
+        </section>
+
+        <section class="screen" data-screen="teacher">
+          <div class="page-title"><div><p class="eyebrow">Kontrol lengkap</p><h1>Ruang Guru</h1><p id="teacherSubtitle">Masuk untuk melihat data kelas.</p></div><div class="page-title-actions"><button class="secondary-button" id="teacherToPresentationButton" type="button">▣ Presentasi</button><button class="secondary-button" id="teacherRefreshButton" type="button">↻ Segarkan</button></div></div>
+          <div class="teacher-stats" id="teacherStats"></div>
+          <div class="teacher-tabs" id="teacherTabs" role="tablist">
+            <button class="active" type="button" data-teacher-tab="overview">Ringkasan</button>
+            <button type="button" data-teacher-tab="attendance">Absensi</button>
+            <button type="button" data-teacher-tab="tasks">Tugas</button>
+            <button type="button" data-teacher-tab="progress">Pemantauan</button>
+            <button type="button" data-teacher-tab="field">Tugas lapangan</button>
+            <button type="button" data-teacher-tab="nontes">Nontes</button>
+            <button type="button" data-teacher-tab="summative">STS/SAS</button>
+            <button type="button" data-teacher-tab="grades">Nilai</button>
+            <button type="button" data-teacher-tab="access">Akses murid</button>
+          </div>
+          <div class="teacher-workspace" id="teacherWorkspace"></div>
+        </section>
+
+        <section class="screen" data-screen="student">
+          <div class="page-title"><div><p class="eyebrow">Ruang pribadi</p><h1>Masuk sebagai murid</h1><p>Gunakan ID dan kode akses yang diberikan guru.</p></div></div>
+          <form class="auth-card" id="studentLoginForm">
+            <label><span>ID murid</span><input id="studentIdInput" autocomplete="username" placeholder="Contoh: IX-4-01" required /></label>
+            <label><span>Kode akses</span><input id="studentCodeInput" autocomplete="current-password" maxlength="8" required /></label>
+            <button class="primary-button" type="submit">Buka ruang belajar saya</button>
+            <p class="helper-text">Nilai dan data murid lain tidak dapat dilihat dari ruang ini.</p>
+          </form>
+          <div class="student-panel hidden" id="studentPanel">
+            <div class="student-welcome"><div><p class="eyebrow">Selamat datang</p><h2 id="studentName"></h2><p id="studentClass"></p></div><button class="secondary-button" id="studentLogoutButton" type="button">Keluar</button></div>
+            <div id="studentActiveMaterial"></div>
+            <div class="section-heading"><div><p class="eyebrow">Tugas dibuka guru</p><h2>Tugas dan permainan</h2></div></div>
+            <div class="task-grid" id="studentTaskList"></div>
+            <div class="section-heading"><div><p class="eyebrow">Jejak belajar pribadi</p><h2>Perkembangan saya</h2></div></div>
+            <div class="student-results" id="studentResults"></div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="guest">
+          <div class="page-title"><div><p class="eyebrow">Tanpa login</p><h1>Mode Latihan/Tamu</h1><p>Hasil hanya tampil pada perangkat ini dan tidak masuk ke nilai.</p></div></div>
+          <div class="notice-card"><span class="notice-icon">◇</span><div><strong>Latihan bebas</strong><p>Masuk sebagai murid jika ingin perkembangan dan nilai tersimpan.</p></div></div>
+          <div class="toolbar-card guest-toolbar"><label><span>Materi</span><select id="guestMaterialSelect"></select></label><label><span>TP/Submateri</span><select id="guestTopicSelect"></select></label><button class="primary-button" id="startGuestButton" type="button">Mulai 10 soal</button></div>
+          <div id="guestMaterialSummary"></div>
+        </section>
+
+        <section class="screen" data-screen="practice">
+          <div class="practice-shell">
+            <header class="practice-topbar"><button class="back-button" id="practiceBackButton" type="button">←</button><div><small id="practiceModeLabel">Permainan</small><strong id="practiceTitle">MATCH-9</strong></div><span id="practiceProgress">1 / 10</span></header>
+            <article class="practice-card" id="practiceCard"><div id="practiceGameSkin" class="game-skin"></div><p class="eyebrow" id="practiceQuestionCode"></p><h2 class="math-content" id="practiceQuestion"></h2><div class="choice-list math-content" id="practiceChoices"></div><div class="practice-feedback hidden" id="practiceFeedback"></div><button class="primary-button hidden" id="practiceNextButton" type="button">Soal berikutnya →</button></article>
+          </div>
         </section>
 
         <section class="screen" data-screen="lesson">
@@ -83,95 +154,39 @@
         </section>
 
         <section class="screen" data-screen="class">
-          <div class="page-title">
-            <div><p class="eyebrow">Kehadiran</p><h1>Daftar kelas</h1></div>
-            <span class="date-badge" id="todayLabel"></span>
-          </div>
-          <div class="toolbar-card class-toolbar">
-            <label><span>Pilih kelas</span><select id="classSelect"></select></label>
-            <label><span>Tanggal</span><input id="attendanceDate" type="date" /></label>
-            <button class="secondary-button" id="markAllPresentButton" type="button">Semua hadir</button>
-          </div>
-          <div class="section-heading class-heading">
-            <div><p class="eyebrow">Daftar peserta didik</p><h2 id="classCountLabel">0 murid</h2></div>
-            <button class="primary-button small" id="saveAttendanceButton" type="button">Simpan absensi</button>
-          </div>
+          <div class="page-title"><div><p class="eyebrow">Kehadiran</p><h1>Daftar kelas</h1></div><span class="date-badge" id="todayLabel"></span></div>
+          <div class="toolbar-card class-toolbar"><label><span>Pilih kelas</span><select id="classSelect"></select></label><label><span>Tanggal</span><input id="attendanceDate" type="date" /></label><button class="secondary-button" id="markAllPresentButton" type="button">Semua hadir</button></div>
+          <div class="section-heading class-heading"><div><p class="eyebrow">Daftar peserta didik</p><h2 id="classCountLabel">0 murid</h2></div><button class="primary-button small" id="saveAttendanceButton" type="button">Simpan absensi</button></div>
           <div class="student-list" id="studentList"></div>
-          <button class="game-launch-card" id="openGameButton" type="button">
-            <span class="game-launch-icon" aria-hidden="true">4</span>
-            <span><small>Setelah absensi</small><strong>Buka game prasyarat</strong><em>Empat murid mendapat empat soal berbeda</em></span>
-            <b aria-hidden="true">›</b>
-          </button>
+          <button class="game-launch-card" id="openGameButton" type="button"><span class="game-launch-icon">4</span><span><small>Game kelas</small><strong>Buka game prasyarat</strong><em>Empat murid mendapat soal berbeda</em></span><b>›</b></button>
         </section>
 
         <section class="screen" data-screen="game">
           <button class="back-button" id="gameBackButton" type="button">‹ Kembali ke kelas</button>
-          <section class="game-arena" id="gameArena">
-            <div class="game-heading">
-              <div><p class="eyebrow light">Game prasyarat · 4 murid</p><h1 id="gameTopicLabel">Pilih materi dahulu</h1></div>
-              <strong class="timer" id="gameTimer">03:00</strong>
-            </div>
-            <p class="game-material" id="gameMaterialLabel">Soal mudah sebagai jembatan menuju materi.</p>
-            <div class="game-status" id="gameStatus">Siap mengacak nama</div>
-            <div class="draw-results" id="drawResults"></div>
-            <div class="game-actions">
-              <button class="light-button" id="drawStudentsButton" type="button">Acak 4 murid</button>
-              <button class="ghost-light-button hidden" id="finishGameButton" type="button">Akhiri waktu</button>
-              <button class="ghost-light-button" id="resetDrawButton" type="button">Putaran baru</button>
-              <button class="light-button hidden" id="reviewScoresButton" type="button">Periksa nilai</button>
-              <button class="light-button hidden" id="continueGameButton" type="button">Lanjut ke materi →</button>
-            </div>
-          </section>
+          <section class="game-arena" id="gameArena"><div class="game-heading"><div><p class="eyebrow light">Game prasyarat · 4 murid</p><h1 id="gameTopicLabel">Pilih materi dahulu</h1></div><strong class="timer" id="gameTimer">03:00</strong></div><p class="game-material" id="gameMaterialLabel"></p><div class="game-status" id="gameStatus">Siap mengacak nama</div><div class="draw-results" id="drawResults"></div><div class="game-actions"><button class="light-button" id="drawStudentsButton" type="button">Acak 4 murid</button><button class="ghost-light-button hidden" id="finishGameButton" type="button">Akhiri waktu</button><button class="ghost-light-button" id="resetDrawButton" type="button">Putaran baru</button><button class="light-button hidden" id="reviewScoresButton" type="button">Periksa nilai</button><button class="light-button hidden" id="continueGameButton" type="button">Lanjut ke materi →</button></div></section>
         </section>
 
         <section class="screen" data-screen="grades">
-          <div class="page-title">
-            <div><p class="eyebrow">Penilaian objektif dan dapat dilacak</p><h1>Rekap nilai otomatis</h1></div>
-            <div class="page-title-actions"><button class="secondary-button small" id="refreshPrintFormatButton" type="button">Siapkan format cetak</button><button class="primary-button small" id="openSummativeFromGradesButton" type="button">Input STS/SAS</button></div>
-          </div>
-          <div class="toolbar-card grade-toolbar"><label><span>Pilih kelas</span><select id="gradeClassSelect"></select></label></div>
-          <div class="weight-strip" id="weightStrip"></div>
-          <p class="helper-text">NF, NSLM, dan Nontes dihitung dari bukti belajar. NR baru muncul setelah tugas seluruh TP, Nontes, STS, dan SAS lengkap.</p>
-          <div class="table-wrap">
-            <table class="grade-table">
-              <thead><tr><th>Murid</th><th>Progres TP</th><th>NF</th><th>NSLM</th><th>Nontes</th><th>STS</th><th>SAS</th><th>NR</th><th>Nilai Asli</th><th>Status</th></tr></thead>
-              <tbody id="gradeTableBody"></tbody>
-            </table>
-          </div>
+          <div class="page-title"><div><p class="eyebrow">Objektif dan dapat dilacak</p><h1>Rekap nilai otomatis</h1></div><div class="page-title-actions"><button class="secondary-button small" id="refreshPrintFormatButton" type="button">Siapkan format cetak</button><button class="primary-button small" id="openSummativeFromGradesButton" type="button">Input STS/SAS</button></div></div>
+          <div class="toolbar-card grade-toolbar"><label><span>Pilih kelas</span><select id="gradeClassSelect"></select></label></div><div class="weight-strip" id="weightStrip"></div><div class="table-wrap"><table class="grade-table"><thead><tr><th>Murid</th><th>Progres TP</th><th>NF</th><th>NSLM</th><th>Nontes</th><th>STS</th><th>SAS</th><th>Bonus</th><th>NR</th><th>Nilai Asli</th><th>Status</th></tr></thead><tbody id="gradeTableBody"></tbody></table></div>
         </section>
 
         <section class="screen" data-screen="settings">
-          <div class="page-title"><div><p class="eyebrow">Koneksi dan tampilan</p><h1>Pengaturan</h1></div></div>
-          <div class="settings-card theme-card">
-            <div class="settings-title"><span class="summary-icon rose" aria-hidden="true">☀</span><div><strong>Pilih warna cerah</strong><small>Hanya berlaku pada perangkat ini</small></div></div>
-            <div class="theme-picker" id="themePicker">
-              <button type="button" data-theme-choice="langit"><span></span>Langit</button>
-              <button type="button" data-theme-choice="mint"><span></span>Mint</button>
-              <button type="button" data-theme-choice="matahari"><span></span>Matahari</button>
-              <button type="button" data-theme-choice="peach"><span></span>Peach</button>
-              <button type="button" data-theme-choice="lavender"><span></span>Lavender</button>
-              <button type="button" data-theme-choice="rose"><span></span>Rosé</button>
-            </div>
-          </div>
-          <div class="settings-card">
-            <div class="settings-title"><span class="summary-icon indigo" aria-hidden="true">G</span><div><strong>Alamat Web App GAS</strong><small>Alamat berakhiran /exec</small></div></div>
-            <label class="stacked-field"><span>URL Google Apps Script</span><input id="gasUrlInput" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/.../exec" /></label>
-            <div class="button-row"><button class="primary-button" id="saveUrlButton" type="button">Simpan & sambungkan</button><button class="secondary-button" id="clearCacheButton" type="button">Muat data terbaru</button></div>
-          </div>
-          <div class="settings-card">
-            <div class="settings-title"><span class="summary-icon amber" aria-hidden="true">PIN</span><div><strong>Mode guru</strong><small>PIN tidak disimpan setelah halaman ditutup</small></div></div>
-            <p>Mode guru diperlukan untuk melihat pembahasan dan menyimpan data.</p>
-            <button class="secondary-button" id="teacherModeButton" type="button">Buka mode guru</button>
-            <span class="teacher-state" id="teacherState">Mode guru terkunci</span>
+          <div class="page-title"><div><p class="eyebrow">Perangkat ini</p><h1>Pengaturan</h1><p>PWA, sambungan server, tampilan, dan antrean offline.</p></div></div>
+          <div class="settings-grid">
+            <div class="settings-card"><div class="settings-title"><span class="summary-icon indigo">G</span><div><strong>Alamat Web App GAS</strong><small>Alamat berakhiran /exec</small></div></div><label class="stacked-field"><span>URL Google Apps Script</span><input id="gasUrlInput" type="url" /></label><div class="button-row"><button class="primary-button" id="saveUrlButton" type="button">Simpan & sambungkan</button><button class="secondary-button" id="clearCacheButton" type="button">Segarkan data</button></div></div>
+            <div class="settings-card"><div class="settings-title"><span class="summary-icon teal">PWA</span><div><strong>Aplikasi di perangkat</strong><small id="pwaStatus">Memeriksa dukungan</small></div></div><div class="button-row"><button class="primary-button" id="settingsInstallButton" type="button">Pasang aplikasi</button><button class="secondary-button" id="settingsUpdateButton" type="button">Perbarui aplikasi</button></div></div>
+            <div class="settings-card"><div class="settings-title"><span class="summary-icon amber">⇅</span><div><strong>Antrean offline</strong><small id="queueStatus">0 kiriman menunggu</small></div></div><button class="primary-button" id="syncNowButton" type="button">Sinkronkan sekarang</button></div>
+            <div class="settings-card theme-card"><div class="settings-title"><span class="summary-icon rose">☀</span><div><strong>Pilih warna cerah</strong><small>Hanya berlaku pada perangkat ini</small></div></div><div class="theme-picker" id="themePicker"><button type="button" data-theme-choice="langit"><span></span>Langit</button><button type="button" data-theme-choice="mint"><span></span>Mint</button><button type="button" data-theme-choice="matahari"><span></span>Matahari</button><button type="button" data-theme-choice="peach"><span></span>Peach</button><button type="button" data-theme-choice="lavender"><span></span>Lavender</button><button type="button" data-theme-choice="rose"><span></span>Rosé</button></div></div>
           </div>
         </section>
       </main>
     </div>
 
-    <div class="loading-overlay hidden" id="loadingOverlay" role="status" aria-live="polite"><div class="loading-card"><span class="spinner" aria-hidden="true"></span><strong id="loadingText">Memuat data…</strong></div></div>
+    <div class="loading-overlay hidden" id="loadingOverlay" role="status" aria-live="polite"><div class="loading-card"><span class="spinner"></span><strong id="loadingText">Memuat data…</strong></div></div>
     <div class="modal-backdrop hidden" id="teacherModal" role="dialog" aria-modal="true" aria-labelledby="teacherModalTitle"></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./config.js"></script>
-    <script src="./script.js?v=6" defer></script>
+    <script src="./config.js?v=7.0.0"></script>
+    <script src="./script.js?v=7.0.0" defer></script>
   </body>
 </html>

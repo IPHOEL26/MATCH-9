@@ -1,4 +1,4 @@
-# MATCH-9 — Tampilan GitHub Pages
+# MATCH-9 — PWA GitHub Pages (Versi 7)
 
 Folder ini berisi halaman aplikasi yang dapat langsung diunggah ke GitHub Pages tanpa proses build.
 
@@ -8,16 +8,25 @@ Folder ini berisi halaman aplikasi yang dapat langsung diunggah ke GitHub Pages 
 - `style.css` — warna dan tampilan;
 - `script.js` — fungsi aplikasi dan komunikasi dengan GAS;
 - `config.js` — tempat menempel URL Web App GAS;
+- `manifest.webmanifest` dan `sw.js` — pemasangan aplikasi, cache versi, dan materi offline;
+- `assets/icons/*.png` — ikon M9 ukuran 192 dan 512 piksel;
 - `assets/og.png` — gambar pratinjau ketika tautan dibagikan;
 - `assets/context/*.webp` — ilustrasi ringan untuk hubungan materi dengan kehidupan nyata.
 
 Sebelum mengunggah, tempel URL GAS berakhiran `/exec` pada `config.js`. Jangan menaruh PIN guru atau jawaban materi pada folder ini.
 
-Versi penyempurnaan memiliki:
+Versi 7 memiliki:
+
+- PWA yang dapat dipasang di HP/laptop, tombol pembaruan, materi offline, dan antrean sinkronisasi;
+- jalur terpisah untuk Mode Presentasi, Ruang Guru, Ruang Murid, serta Latihan/Tamu;
+- kode akses pribadi murid; data murid, nilai, kunci, dan Bekal Cepat Guru tidak ikut dalam data publik;
+- permainan 10 soal acak yang dinilai server; tiket set soal mencegah perubahan ID soal dan pengiriman tidak lengkap;
+- tugas dengan batas waktu, jumlah percobaan, hasil terbaik, rubrik, bukti foto privat, serta riwayat nilai;
+- Mode Presentasi dengan slide Bekal Cepat Guru yang seluruh isinya bersumber dari Google Sheet;
 
 - enam tema warna cerah;
 - tampilan responsif: lanskap lebar di laptop dan tetap nyaman di HP;
-- menu utama yang turun dari tombol Σ serta tombol layar penuh;
+- menu utama yang turun dari logo M9 serta tombol layar penuh;
 - materi bertahap satu fokus per layar;
 - notasi matematika melalui MathJax;
 - pilihan kelas 9-4 dan 9-2;

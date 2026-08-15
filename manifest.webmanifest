@@ -1,0 +1,43 @@
+{
+  "id": "./",
+  "name": "MATCH-9 · Matematika Kelas IX",
+  "short_name": "MATCH-9",
+  "description": "Belajar Matematika Kelas IX melalui materi, latihan, permainan, dan masalah nyata.",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#071b3a",
+  "theme_color": "#0b3558",
+  "orientation": "any",
+  "lang": "id",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "./assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mode Presentasi",
+      "short_name": "Presentasi",
+      "url": "./?mode=presentasi",
+      "icons": [{ "src": "./assets/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ruang Murid",
+      "short_name": "Murid",
+      "url": "./?mode=murid",
+      "icons": [{ "src": "./assets/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
