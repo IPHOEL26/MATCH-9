@@ -9,7 +9,7 @@ Folder ini berisi halaman aplikasi yang dapat langsung diunggah ke GitHub Pages 
 - `script.js` — fungsi aplikasi dan komunikasi dengan GAS;
 - `config.js` — tempat menempel URL Web App GAS;
 - `manifest.webmanifest` dan `sw.js` — pemasangan aplikasi, cache versi, dan materi offline;
-- `assets/icons/*.png` — ikon M9 ukuran 192 dan 512 piksel;
+- `icon-192.png` dan `icon-512.png` — ikon utama M9 di folder paling depan agar mudah diunggah ke GitHub;
 - `assets/og.png` — gambar pratinjau ketika tautan dibagikan;
 - `assets/context/*.webp` — ilustrasi ringan untuk hubungan materi dengan kehidupan nyata.
 

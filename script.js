@@ -65,6 +65,7 @@ function init() {
   window.addEventListener("online", handleOnline);
   window.addEventListener("offline", updateNetworkState);
   window.addEventListener("beforeinstallprompt", handleInstallPrompt);
+  window.addEventListener("appinstalled", handleAppInstalled);
 
   const configuredUrl = String(window.MATCH9_CONFIG?.GAS_URL || "").trim();
   state.gasUrl = localStorage.getItem(MATCH9_KEYS.gasUrl) || configuredUrl;
@@ -1286,7 +1287,7 @@ function renderSettings() {
   const theme = document.body.dataset.theme;
   elements.themePicker.querySelectorAll("[data-theme-choice]").forEach(function (button) { button.classList.toggle("active", button.dataset.themeChoice === theme); });
   updateQueueStatus();
-  if (elements.pwaStatus) elements.pwaStatus.textContent = window.matchMedia("(display-mode: standalone)").matches
+  if (elements.pwaStatus) elements.pwaStatus.textContent = isStandaloneApp()
     ? "MATCH-9 sudah terpasang"
     : "Dapat dipasang dari peramban yang mendukung";
 }
@@ -1527,7 +1528,14 @@ function updateQuickActions() {
   const inPresentation = state.screen === "presentation" || state.presentationStarted;
   if (elements.quickPresentationButton) elements.quickPresentationButton.classList.toggle("hidden", !state.presentationStarted || state.screen === "presentation");
   if (elements.quickTeacherButton) elements.quickTeacherButton.classList.toggle("hidden", !inPresentation || state.screen === "teacher");
-  if (elements.installAppButton) elements.installAppButton.classList.toggle("hidden", !state.installPrompt);
+  if (elements.installAppButton) {
+    elements.installAppButton.classList.toggle("hidden", isStandaloneApp());
+    elements.installAppButton.classList.toggle("install-ready", Boolean(state.installPrompt));
+  }
+}
+
+function isStandaloneApp() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 }
 
 function restoreLocalSessions() {
@@ -1573,9 +1581,16 @@ function handleInstallPrompt(event) {
   renderSettings();
 }
 
+function handleAppInstalled() {
+  state.installPrompt = null;
+  updateQuickActions();
+  renderSettings();
+  showToast("MATCH-9 berhasil dipasang di perangkat.");
+}
+
 async function installApplication() {
   if (!state.installPrompt) {
-    showToast("Gunakan menu peramban 'Tambahkan ke layar utama' jika tombol pemasangan belum muncul.");
+    showToast("Jika jendela pemasangan belum muncul, pilih menu peramban lalu 'Instal aplikasi' atau 'Tambahkan ke layar utama'.");
     return;
   }
   state.installPrompt.prompt();

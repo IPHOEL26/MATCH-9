@@ -1,15 +1,17 @@
 "use strict";
 
-const CACHE_NAME = "match9-shell-v7.0.0";
+const CACHE_NAME = "match9-shell-v7.0.1";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./style.css?v=7.0.0",
-  "./config.js?v=7.0.0",
-  "./script.js?v=7.0.0",
+  "./style.css?v=7.0.1",
+  "./config.js?v=7.0.1",
+  "./script.js?v=7.0.1",
   "./manifest.webmanifest",
-  "./assets/icons/icon-192.png",
-  "./assets/icons/icon-512.png",
+  "./icon-192.png",
+  "./icon-512.png"
+];
+const OPTIONAL_ASSETS = [
   "./assets/context/bangun-ruang.webp",
   "./assets/context/peluang.webp",
   "./assets/context/spldv-pasar.webp",
@@ -20,6 +22,13 @@ self.addEventListener("install", function (event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(function (cache) { return cache.addAll(APP_SHELL); })
+      .then(function () {
+        return caches.open(CACHE_NAME).then(function (cache) {
+          return Promise.all(OPTIONAL_ASSETS.map(function (url) {
+            return cache.add(url).catch(function () { return null; });
+          }));
+        });
+      })
       .then(function () { return self.skipWaiting(); })
   );
 });

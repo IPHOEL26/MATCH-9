@@ -7,12 +7,12 @@
     <meta name="description" content="MATCH-9, aplikasi pembelajaran Matematika Kelas IX SMPN 38 Maluku Tengah." />
     <meta property="og:title" content="MATCH-9 · Matematika Kelas IX" />
     <meta property="og:description" content="Materi, presentasi, permainan, tugas, dan penilaian Matematika Kelas IX." />
-    <meta property="og:image" content="./assets/icons/icon-512.png" />
+    <meta property="og:image" content="./icon-512.png" />
     <title>MATCH-9 · Matematika Kelas IX</title>
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="icon" href="./assets/icons/icon-192.png" type="image/png" />
-    <link rel="apple-touch-icon" href="./assets/icons/icon-192.png" />
-    <link rel="stylesheet" href="./style.css?v=7.0.0" />
+    <link rel="icon" href="./icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="stylesheet" href="./style.css?v=7.0.1" />
     <script>
       window.MathJax = {
         tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] },
@@ -28,7 +28,10 @@
       <header class="topbar">
         <div class="brand-wrap">
           <button class="brand-button" id="brandButton" type="button" aria-expanded="false" aria-controls="mainMenu" aria-label="Buka menu MATCH-9">
-            <img class="brand-logo" src="./assets/icons/icon-192.png" alt="" />
+            <span class="brand-logo-wrap" aria-hidden="true">
+              <img class="brand-logo" src="./icon-192.png" alt="" onerror="this.style.display='none'" />
+              <span class="brand-logo-fallback">M9</span>
+            </span>
             <span><strong id="appName">MATCH-9</strong><small id="schoolName">SMPN 38 Maluku Tengah</small></span>
             <span class="menu-chevron" aria-hidden="true">⌄</span>
           </button>
@@ -46,8 +49,8 @@
         <div class="topbar-actions">
           <button class="header-icon-button hidden" id="quickPresentationButton" type="button" title="Kembali ke presentasi" aria-label="Kembali ke presentasi">▣</button>
           <button class="header-icon-button hidden" id="quickTeacherButton" type="button" title="Buka Ruang Guru" aria-label="Buka Ruang Guru">◎</button>
-          <button class="header-icon-button hidden" id="installAppButton" type="button" title="Pasang MATCH-9" aria-label="Pasang aplikasi">＋</button>
           <button class="status-chip draft" id="connectionButton" type="button"><span aria-hidden="true"></span><b id="connectionText">Memeriksa</b></button>
+          <button class="header-icon-button" id="installAppButton" type="button" title="Pasang MATCH-9" aria-label="Pasang aplikasi">＋</button>
         </div>
       </header>
 
@@ -55,7 +58,7 @@
         <section class="screen active" data-screen="home">
           <div class="hero-card hero-v7">
             <div><p class="eyebrow light">Belajar · Bermain · Memecahkan masalah</p><h1>Matematika IX</h1><p id="academicLabel">Materi dan latihan yang dekat dengan kehidupan kita.</p></div>
-            <img src="./assets/icons/icon-512.png" alt="Logo MATCH-9" />
+            <img src="./icon-512.png" alt="Logo MATCH-9" />
           </div>
           <div class="offline-banner hidden" id="offlineBanner">Koneksi terputus. Materi terakhir tetap dapat dibaca dan kiriman akan menunggu untuk disinkronkan.</div>
           <div class="sync-banner hidden" id="syncBanner"></div>
@@ -186,7 +189,7 @@
     <div class="loading-overlay hidden" id="loadingOverlay" role="status" aria-live="polite"><div class="loading-card"><span class="spinner"></span><strong id="loadingText">Memuat data…</strong></div></div>
     <div class="modal-backdrop hidden" id="teacherModal" role="dialog" aria-modal="true" aria-labelledby="teacherModalTitle"></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./config.js?v=7.0.0"></script>
-    <script src="./script.js?v=7.0.0" defer></script>
+    <script src="./config.js?v=7.0.1"></script>
+    <script src="./script.js?v=7.0.1" defer></script>
   </body>
 </html>
