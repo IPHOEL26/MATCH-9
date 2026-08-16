@@ -524,3 +524,45 @@ body.modal-open { overflow: hidden; }
 @media (max-width: 850px) { .presentation-toolbar,.guest-toolbar { grid-template-columns: 1fr 1fr; }.presentation-toolbar button,.guest-toolbar button { grid-column: 1/-1; }.teacher-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }.teacher-action-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }.teacher-form { grid-template-columns: repeat(2,minmax(0,1fr)); }.presentation-context { grid-template-columns: 1fr; }.teacher-brief { grid-template-columns: 1fr; }.teacher-brief section:first-child { grid-column: auto; }.task-grid,.choice-list { grid-template-columns: 1fr; }.result-chip-list { grid-template-columns: repeat(2,minmax(0,1fr)); }.field-score-v7 { grid-template-columns: 38px minmax(150px,1fr) 78px; }.field-score-v7 select,.field-score-v7 .evidence-picker,.field-score-v7 em { grid-column: 2/-1; } }
 @media (max-width: 560px) { .brand-button small,.menu-chevron { display: none; }.brand-logo-wrap { width: 42px; height: 42px; }.hero-v7 > img { width: 82px; }.role-grid { grid-template-columns: 1fr; }.role-card { min-height: 110px; }.presentation-toolbar,.guest-toolbar,.teacher-form { grid-template-columns: 1fr; }.teacher-form .wide { grid-column: auto; }.teacher-panel-heading { align-items: stretch; flex-direction: column; }.teacher-action-grid { grid-template-columns: 1fr; }.access-list > div { grid-template-columns: 1fr auto; }.access-list code,.access-list button { grid-row: 2; }.student-task-card { align-items: stretch; flex-direction: column; }.presentation-stage > footer { padding: 10px; }.presentation-dots { display: none; }.presentation-slide,#presentationSlide { min-height: 470px; padding: 24px; }.practice-card { min-height: 540px; } }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* MATCH-9 V8: latihan bertingkat, diagram, dan gerak ringan */
+.student-practice-toolbar { display: grid; grid-template-columns: 1fr 1.2fr auto; align-items: end; gap: 12px; margin-bottom: 24px; }
+.student-practice-toolbar label { display: grid; gap: 6px; color: var(--muted); font-size: .8rem; font-weight: 900; }
+.student-practice-toolbar select { width: 100%; min-height: 46px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.prerequisite-presentation { width: min(100%,1050px); display: grid; gap: 24px; margin-inline: auto; }
+.practice-stat { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 18px; padding: clamp(22px,4vw,42px); color: #fff; border-radius: 28px; background: linear-gradient(135deg,#0f766e,#0369a1); box-shadow: 0 22px 50px rgba(3,105,161,.22); }
+.practice-stat strong { grid-row: 1/3; font-size: clamp(3.8rem,9vw,7.5rem); line-height: .9; }
+.practice-stat span { align-self: end; font-size: clamp(1.25rem,2.4vw,2rem); font-weight: 1000; }
+.practice-stat small { align-self: start; color: rgba(255,255,255,.82); font-size: clamp(.9rem,1.4vw,1.15rem); }
+.presentation-action-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.worked-example-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.block-goal { margin: 0 0 18px; padding: 14px 18px; color: #0f3d56; border-left: 6px solid #0e7490; border-radius: 12px; background: #ecfeff; font-weight: 850; }
+.worked-example-card { display: grid; align-content: start; gap: 15px; padding: clamp(18px,3vw,28px); border: 1px solid var(--line); border-radius: 24px; background: rgba(255,255,255,.95); box-shadow: 0 16px 34px rgba(31,41,80,.09); }
+.worked-example-card header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.worked-example-card header span { color: var(--primary); font-weight: 1000; }
+.worked-example-card header b { padding: 5px 10px; color: #9a3412; border-radius: 999px; background: #ffedd5; font-size: .68em; }
+.worked-question { min-height: 105px; display: grid; align-content: center; padding: 16px; border-radius: 17px; background: #f8fafc; font-size: clamp(1.2rem,2.2vw,1.8rem); font-weight: 900; }
+.solution-buttons { display: grid; gap: 9px; }
+.solution-buttons details { overflow: hidden; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; }
+.solution-buttons summary { padding: 12px 14px; color: var(--primary); background: #f8fafc; font-size: .72em; font-weight: 1000; cursor: pointer; list-style-position: inside; }
+.solution-buttons details > div { padding: 14px; border-top: 1px solid #e2e8f0; font-size: .78em; line-height: 1.55; }
+.math-diagram { width: min(100%,760px); display: grid; justify-items: center; gap: 8px; margin: 0 auto 22px; }
+.math-diagram img { width: 100%; max-height: 330px; object-fit: contain; border: 1px solid #dbeafe; border-radius: 22px; background: #fff; box-shadow: 0 18px 38px rgba(15,61,86,.13); animation: diagramFloat 5s ease-in-out infinite; }
+.math-diagram figcaption { color: var(--muted); font-size: .65em; font-weight: 800; text-align: center; }
+.student-work-card { width: min(100%,980px); display: grid; gap: 18px; margin-inline: auto; padding: clamp(22px,4vw,42px); border: 2px solid #c7d2fe; border-radius: 28px; background: linear-gradient(145deg,#fff,#eef2ff); box-shadow: 0 22px 52px rgba(67,56,202,.12); }
+.student-work-card .presentation-question { margin: 0; }
+.score-student-button { justify-self: center; min-width: min(100%,260px); }
+.presentation-tone-worked,.presentation-tone-student-work,.presentation-tone-prerequisite { animation: slideReveal .38s ease both; }
+.game-skin > span { animation: answerPulse 2.2s ease-in-out infinite; }
+.choice-button:hover > span,.choice-button.selected > span { animation: answerPulse .65s ease-in-out; }
+@keyframes slideReveal { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
+@keyframes diagramFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes answerPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+@media (max-width: 850px) {
+  .student-practice-toolbar,.worked-example-grid { grid-template-columns: 1fr; }
+  .student-practice-toolbar button { width: 100%; }
+  .practice-stat { grid-template-columns: 1fr; text-align: center; }
+  .practice-stat strong { grid-row: auto; }
+  .worked-question { min-height: 0; }
+}

@@ -1,12 +1,12 @@
 "use strict";
 
-const CACHE_NAME = "match9-shell-v7.0.1";
+const CACHE_NAME = "match9-shell-v8.0.0";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./style.css?v=7.0.1",
-  "./config.js?v=7.0.1",
-  "./script.js?v=7.0.1",
+  "./style.css?v=8.0.0",
+  "./config.js?v=8.0.0",
+  "./script.js?v=8.0.0",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png"

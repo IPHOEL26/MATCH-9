@@ -1,4 +1,4 @@
-# MATCH-9 — PWA GitHub Pages (Versi 7)
+# MATCH-9 — PWA GitHub Pages (Versi 8)
 
 Folder ini berisi halaman aplikasi yang dapat langsung diunggah ke GitHub Pages tanpa proses build.
 
@@ -12,10 +12,22 @@ Folder ini berisi halaman aplikasi yang dapat langsung diunggah ke GitHub Pages 
 - `icon-192.png` dan `icon-512.png` — ikon utama M9 di folder paling depan agar mudah diunggah ke GitHub;
 - `assets/og.png` — gambar pratinjau ketika tautan dibagikan;
 - `assets/context/*.webp` — ilustrasi ringan untuk hubungan materi dengan kehidupan nyata.
+- `assets/diagrams/*.svg` — 20 diagram matematika presisi untuk SPLDV, bangun ruang sisi lengkung, transformasi, dan peluang.
 
 Sebelum mengunggah, tempel URL GAS berakhiran `/exec` pada `config.js`. Jangan menaruh PIN guru atau jawaban materi pada folder ini.
 
-Versi 7 memiliki:
+Versi 8 memiliki seluruh fungsi Versi 7, ditambah:
+
+- Tes Prasyarat bebas bagi murid terdaftar; dapat diulang dari rumah atau sekolah dan nilai terbaik menjadi bukti prasyarat TP;
+- ringkasan pada Mode Presentasi untuk melihat berapa murid yang sudah berlatih dan berapa percobaan yang tersimpan;
+- tombol Tes Prasyarat kelas yang kembali ke slide setelah permainan selesai;
+- tiga tingkat latihan untuk setiap TP: Dasar, Menengah, dan Arah TKA;
+- dua contoh per tingkat dengan tombol cara umum, trik cepat, dan hasil guru;
+- satu soal siswa per tingkat dengan jawaban guru, pedoman nilai, serta tombol pencatatan nilai `Latihan di kelas`;
+- gambar/diagram yang seluruh alamatnya dibaca dari Google Sheet;
+- animasi ringan pada pergantian slide, diagram, dan saat jawaban dibuka, serta otomatis dinonaktifkan bila perangkat memilih pengurangan gerak.
+
+Fungsi dasar yang tetap tersedia:
 
 - PWA yang dapat dipasang di HP/laptop, tombol pembaruan, materi offline, dan antrean sinkronisasi;
 - jalur terpisah untuk Mode Presentasi, Ruang Guru, Ruang Murid, serta Latihan/Tamu;

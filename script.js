@@ -30,6 +30,7 @@ const state = {
   gameElapsed: 0,
   gameResults: new Map(),
   gameQuestions: new Map(),
+  gameReturnScreen: "lesson",
   practiceBatch: null,
   fieldTaskQuestion: null,
   assessmentData: null,
@@ -47,6 +48,7 @@ const state = {
   practiceAnswers: [],
   practiceStartedAt: 0,
   practiceMode: "GUEST",
+  practiceActivityKind: "LATIHAN",
   practiceReturnScreen: "guest",
 };
 
@@ -154,9 +156,12 @@ function bindEvents() {
   on("presentationPrevButton", "click", function () { movePresentation(-1); });
   on("presentationNextButton", "click", function () { movePresentation(1); });
   on("presentationTeacherButton", "click", function () { navigate("teacher"); });
+  on("presentationSlide", "click", onPresentationSlideClick);
   on("studentLoginForm", "submit", loginStudent);
   on("studentLogoutButton", "click", logoutStudent);
   on("studentTaskList", "click", onStudentTaskClick);
+  on("studentPracticeMaterialSelect", "change", renderStudentPracticeTopics);
+  on("startStudentPrerequisiteButton", "click", startStudentPrerequisite);
   on("guestMaterialSelect", "change", renderGuestTopics);
   on("guestTopicSelect", "change", renderGuestSummary);
   on("startGuestButton", "click", startGuestPractice);
@@ -845,9 +850,20 @@ function diagnosticScoreFromTime() {
   return Math.max(50, Math.min(100, Math.round((50 + ratio * 50) / 5) * 5));
 }
 
-function continueFromGame() {
+async function continueFromGame() {
   const allSaved = state.currentDraw.length && state.currentDraw.every(function (student) { return state.gameResults.get(student.ID_SISWA)?.status === "saved"; });
   if (!allSaved) { showToast("Pastikan semua nilai sudah tersimpan terlebih dahulu."); return; }
+  if (state.gameReturnScreen === "presentation") {
+    const nextIndex = state.presentationIndex + 1;
+    state.gameReturnScreen = "lesson";
+    await refreshTeacherData();
+    state.presentationSlides = buildPresentationSlides();
+    state.presentationIndex = Math.min(nextIndex, Math.max(0, state.presentationSlides.length - 1));
+    state.presentationStarted = true;
+    savePresentationState();
+    navigate("presentation");
+    return;
+  }
   state.lessonStep = Math.max(state.lessonStep, 4);
   renderLesson();
   navigate("lesson");
@@ -1165,22 +1181,23 @@ function scoreOrDash(value) {
   return hasScore(value) ? escapeHtml(value) : "—";
 }
 
-async function openQuickNontes() {
+async function openQuickNontes(prefill) {
   if (!(await ensureTeacher())) return;
+  const initial = prefill || {};
   const students = activeStudents();
   const material = selectedMaterial();
   const topic = selectedTopic();
   if (!students.length) { showToast(`Belum ada murid aktif pada ${className()}.`); return; }
-  const options = students.map(function (student) {
+  const studentOptions = students.map(function (student) {
     return `<option value="${escapeAttribute(student.ID_SISWA)}">${escapeHtml(student.NOMOR_URUT)} · ${escapeHtml(student.NAMA_SISWA)}</option>`;
   }).join("");
   openTeacherModal(`<div class="modal-panel compact-score-modal">
     <header class="modal-heading"><div><p class="eyebrow">Catatan cepat</p><h2 id="teacherModalTitle">Nilai Nontes · ${escapeHtml(className())}</h2><p>${escapeHtml(topic?.JUDUL || material?.JUDUL || "Kegiatan kelas")}</p></div><button class="modal-close" type="button" data-close-modal aria-label="Tutup">×</button></header>
     <div class="quick-score-form">
-      <label><span>Nama murid</span><select data-nontes-student>${options}</select></label>
-      <label><span>Jenis bukti</span><select data-nontes-kind><option>Jawab lisan</option><option>Dikte</option><option>Keaktifan</option><option>Menjelaskan cara</option></select></label>
+      <label><span>Nama murid</span><select data-nontes-student>${studentOptions}</select></label>
+      <label><span>Jenis bukti</span><select data-nontes-kind>${["Latihan di kelas","Jawab lisan","Dikte","Keaktifan","Menjelaskan cara"].map(function (label) { return `<option${label === initial.kind ? " selected" : ""}>${label}</option>`; }).join("")}</select></label>
       <label><span>Nilai 0–120</span><input type="number" min="0" max="120" inputmode="decimal" data-nontes-score placeholder="Contoh: 85" /></label>
-      <label><span>Catatan singkat</span><input type="text" data-nontes-note placeholder="Opsional" /></label>
+      <label><span>Catatan singkat</span><input type="text" data-nontes-note value="${escapeAttribute(initial.note || "")}" placeholder="Opsional" /></label>
     </div>
     <p class="modal-helper">Nilai 101–120 menjadi tanda bukti unggul. Nilai akademik yang dihitung tetap maksimal 100.</p>
     <footer class="modal-actions"><button class="secondary-button" type="button" data-close-modal>Batal</button><button class="primary-button" type="button" data-save-nontes>Simpan Nontes</button></footer>
@@ -1514,6 +1531,7 @@ function mergeTeacherData() {
     grades: teacher.grades || [],
     tpScores: teacher.tpScores || [],
     assignments: teacher.assignments || [],
+    lessonFlows: teacher.lessonFlows || [],
     attendance: teacher.attendance || [],
     diagnostics: teacher.diagnostics || [],
     gameResults: teacher.gameResults || [],
@@ -1727,10 +1745,17 @@ function buildPresentationSlides() {
   const teacher = state.teacherAnswers?.[`${material.ID_MATERI}::${topic.ID_SUBMATERI}`] || {};
   const points = splitPoints(topic.POIN_PENTING);
   const keywords = splitPoints(topic.KATA_KUNCI);
-  const examples = [1, 2, 3].filter(function (number) { return topic[`CONTOH_${number}`]; }).map(function (number) {
-    return `<article class="presentation-example"><strong>Contoh ${number}</strong><div>${mathText(topic[`CONTOH_${number}`])}</div><details><summary>Cara kerja guru</summary><div>${mathText(teacher[`CARA_CONTOH_${number}`] || "Belum diisi pada Sheet.")}</div></details></article>`;
-  }).join("");
   const image = safeImageUrl(topic.GAMBAR_URL);
+  const flows = (state.teacherData?.lessonFlows || []).filter(function (item) {
+    return String(item.ID_MATERI || "") === String(material.ID_MATERI || "") && String(item.ID_SUBMATERI || "") === String(topic.ID_SUBMATERI || "") && String(item.AKTIF).toUpperCase() !== "FALSE";
+  }).sort(function (a, b) { return Number(a.URUTAN || 0) - Number(b.URUTAN || 0); });
+  const diagnostics = (state.teacherData?.diagnostics || []).filter(function (item) {
+    return String(item.ID_KELAS || "") === String(state.activeClassId || "") && String(item.ID_MATERI || "") === String(material.ID_MATERI || "") && String(item.ID_SUBMATERI || "") === String(topic.ID_SUBMATERI || "");
+  });
+  const diagnosticStudents = {};
+  diagnostics.forEach(function (item) { diagnosticStudents[String(item.ID_SISWA || "")] = true; });
+  const practicedCount = Object.keys(diagnosticStudents).filter(Boolean).length;
+  const totalStudents = activeStudents().length;
   const bekalRows = [
     ["Tujuan", teacher.BEKAL_TUJUAN || topic.TUJUAN],
     ["Makna paling sederhana", teacher.BEKAL_ARTI_KONSEP || topic.DEFINISI_KONSEP || topic.RINGKASAN],
@@ -1741,16 +1766,63 @@ function buildPresentationSlides() {
     ["Kata kunci", teacher.BEKAL_KATA_KUNCI || topic.KATA_KUNCI],
     ["Kesalahan yang diwaspadai", teacher.BEKAL_KESALAHAN_UMUM || topic.KESALAHAN_UMUM],
   ].filter(function (item) { return item[1]; });
-  return [
+  const slides = [
     { kicker: "Bekal Cepat Guru", title: topic.JUDUL, tone: "teacher", html: `<div class="teacher-brief">${bekalRows.map(function (item) { return `<section><small>${escapeHtml(item[0])}</small><p>${mathText(item[1])}</p></section>`; }).join("")}</div>` },
     { kicker: "Tujuan pembelajaran", title: "Hari ini kita akan...", tone: "goal", html: `<p class="presentation-lead">${mathText(topic.TUJUAN || "Tujuan belum diisi pada Sheet.")}</p>` },
     { kicker: "Jembatan kehidupan", title: "Matematika ternyata dekat", tone: "context", html: `<div class="presentation-context"><p>${mathText(topic.KONTEKS_SEHARI_HARI || "Konteks sehari-hari belum diisi pada Sheet.")}</p>${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(topic.KETERANGAN_GAMBAR || "Ilustrasi konteks matematika")}" />` : ""}</div>` },
+    { kicker: "Tes Prasyarat", title: "Latihan membentuk kemampuan", tone: "prerequisite", html: `<div class="prerequisite-presentation"><div class="practice-stat"><strong>${practicedCount}</strong><span>dari ${totalStudents || "-"} murid sudah memiliki jejak latihan</span><small>${diagnostics.length} percobaan tersimpan untuk TP ini. Murid dapat terus berlatih dari HP di rumah atau sekolah; nilai terbaik menjadi bukti prasyarat TP.</small></div><div class="presentation-action-row"><button class="primary-button" type="button" data-presentation-prerequisite>Mulai Tes Prasyarat kelas</button><button class="secondary-button" type="button" data-presentation-review>Periksa siapa yang sudah latihan</button></div></div>` },
     { kicker: "Inti konsep", title: topic.DEFINISI_KONSEP || "Apa yang perlu dipahami?", tone: "core", html: `<p class="presentation-lead">${mathText(topic.RINGKASAN || "Ringkasan belum diisi.")}</p>${points.length ? `<ul>${points.map(function (item) { return `<li>${mathText(item)}</li>`; }).join("")}</ul>` : ""}` },
     { kicker: "Rumus dan simbol", title: topic.RUMUS_PENTING || "Bahasa matematika", tone: "formula", html: `<div class="formula-panel">${mathText(topic.RUMUS_PENTING || "Rumus penting belum diisi pada Sheet.")}</div><p>${mathText(topic.ARTI_SIMBOL || "Arti simbol perlu dijelaskan dengan bahasa murid.")}</p>${keywords.length ? `<div class="keyword-row">${keywords.map(function (item) { return `<span>${mathText(item)}</span>`; }).join("")}</div>` : ""}` },
-    { kicker: "Contoh bersama", title: "Lihat, tanyakan, lalu coba", tone: "example", html: examples || `<p class="presentation-lead">Contoh belum diisi pada Sheet.</p>` },
-    { kicker: "Cek pemahaman", title: "Siap mencoba?", tone: "check", html: `<div class="presentation-question">${mathText(topic.LATIHAN_1 || topic.SOAL_PRASYARAT_1 || "Soal cek pemahaman belum diisi.")}</div>` },
-    { kicker: "Refleksi", title: "Apa yang kita pahami?", tone: "reflect", html: `<p class="presentation-lead">${mathText(topic.REFLEKSI || "Jelaskan kembali ide utama dengan kalimatmu sendiri dan sebutkan satu penerapannya dalam kehidupan.")}</p>` },
   ];
+
+  if (flows.length) {
+    flows.forEach(function (block, blockIndex) {
+      const blockImage = safeImageUrl(block.GAMBAR_URL);
+      const exampleCards = [1, 2].map(function (number) {
+        const question = block[`CONTOH_${number}_SOAL`];
+        if (!question) return "";
+        return `<article class="worked-example-card"><header><span>Contoh ${number}</span><b>${escapeHtml(block.TINGKAT || "Latihan")}</b></header><div class="worked-question">${mathText(question)}</div><div class="solution-buttons"><details><summary>Lihat cara umum</summary><div>${mathText(block[`CONTOH_${number}_CARA_UMUM`] || "Belum diisi pada Sheet.")}</div></details><details><summary>Lihat trik cepat</summary><div>${mathText(block[`CONTOH_${number}_TRIK_CEPAT`] || "Belum diisi pada Sheet.")}</div></details><details><summary>Lihat hasil guru</summary><div>${mathText(block[`CONTOH_${number}_JAWABAN`] || "Belum diisi pada Sheet.")}</div></details></div></article>`;
+      }).join("");
+      slides.push({
+        kicker: `Latihan bertingkat ${blockIndex + 1} · ${block.TINGKAT || "Tahap"}`,
+        title: block.JUDUL_BLOK || `Dua contoh ${block.TINGKAT || ""}`,
+        tone: "worked",
+        html: `${block.TUJUAN_BLOK ? `<p class="block-goal">${mathText(block.TUJUAN_BLOK)}</p>` : ""}${blockImage ? `<figure class="math-diagram"><img src="${escapeAttribute(blockImage)}" alt="Diagram ${escapeAttribute(topic.JUDUL)}" /><figcaption>Amati label dan hubungan pada gambar sebelum menghitung.</figcaption></figure>` : ""}<div class="worked-example-grid">${exampleCards}</div>`,
+      });
+      slides.push({
+        kicker: `Giliran murid · ${block.TINGKAT || "Latihan"}`,
+        title: "Sekarang kalian yang mengerjakan",
+        tone: "student-work",
+        html: `<div class="student-work-card"><div class="presentation-question">${mathText(block.LATIHAN_SISWA_SOAL || "Soal latihan belum diisi pada Sheet.")}</div><div class="solution-buttons"><details><summary>Lihat jawaban guru</summary><div>${mathText(block.LATIHAN_SISWA_JAWABAN || "Belum diisi pada Sheet.")}</div></details><details><summary>Pedoman memberi nilai</summary><div>${mathText(block.PETUNJUK_PENILAIAN || "Nilai ketepatan, langkah, dan kemampuan menjelaskan.")}</div></details></div><button class="primary-button score-student-button" type="button" data-presentation-score data-flow-id="${escapeAttribute(block.ID_BLOK || "")}" data-flow-title="${escapeAttribute(block.JUDUL_BLOK || block.TINGKAT || "Latihan")}">Beri nilai siswa</button></div>`,
+      });
+    });
+  } else {
+    const fallbackExamples = [1, 2, 3].filter(function (number) { return topic[`CONTOH_${number}`]; }).map(function (number) {
+      return `<article class="presentation-example"><strong>Contoh ${number}</strong><div>${mathText(topic[`CONTOH_${number}`])}</div><details><summary>Cara kerja guru</summary><div>${mathText(teacher[`CARA_CONTOH_${number}`] || "Belum diisi pada Sheet.")}</div></details></article>`;
+    }).join("");
+    slides.push({ kicker: "Contoh bersama", title: "Lihat, tanyakan, lalu coba", tone: "example", html: fallbackExamples || `<p class="presentation-lead">Salin ALUR_LATIHAN_V8 ke Sheet lalu jalankan impor V8.</p>` });
+    slides.push({ kicker: "Cek pemahaman", title: "Siap mencoba?", tone: "check", html: `<div class="presentation-question">${mathText(topic.LATIHAN_1 || topic.SOAL_PRASYARAT_1 || "Soal cek pemahaman belum diisi.")}</div>` });
+  }
+  slides.push({ kicker: "Refleksi", title: "Apa yang kita pahami?", tone: "reflect", html: `<p class="presentation-lead">${mathText(topic.REFLEKSI || "Jelaskan kembali ide utama dengan kalimatmu sendiri dan sebutkan satu penerapannya dalam kehidupan.")}</p>` });
+  return slides;
+}
+
+async function onPresentationSlideClick(event) {
+  if (event.target.closest("[data-presentation-prerequisite]")) {
+    state.gameReturnScreen = "presentation";
+    resetGame(false);
+    renderGame();
+    navigate("game");
+    return;
+  }
+  if (event.target.closest("[data-presentation-review]")) {
+    await openDiagnosticReview();
+    return;
+  }
+  const scoreButton = event.target.closest("[data-presentation-score]");
+  if (scoreButton) {
+    await openQuickNontes({ kind: "Latihan di kelas", note: `${scoreButton.dataset.flowTitle || "Latihan"} (${scoreButton.dataset.flowId || selectedTopic()?.ID_SUBMATERI || ""})` });
+  }
 }
 
 function renderPresentation() {
@@ -2061,6 +2133,7 @@ function renderStudent() {
   const classroom = payload.classroom || {};
   const topic = findTopic(classroom.ID_MATERI, classroom.ID_SUBMATERI);
   elements.studentActiveMaterial.innerHTML = `${topic ? `<div class="student-current"><span>Materi kelas saat ini</span><strong>${escapeHtml(topic.JUDUL)}</strong><small>${escapeHtml(classroom.MODE_AKTIF || "Belajar")}</small></div>` : ""}<div class="group-role-guide"><strong>Satu HP boleh dipakai bergiliran</strong><span><b>1</b> Operator</span><span><b>2</b> Pembaca soal</span><span><b>3</b> Penghitung</span><span><b>4</b> Pemeriksa</span></div>`;
+  renderStudentPracticeSelectors(classroom);
   const tasks = payload.assignments || [];
   elements.studentTaskList.innerHTML = tasks.length ? tasks.map(function (item) {
     const taskTopic = findTopic(item.ID_MATERI, item.ID_SUBMATERI);
@@ -2069,6 +2142,41 @@ function renderStudent() {
   const results = (payload.results || []).slice().reverse();
   const grade = (payload.grades || []).slice(-1)[0];
   elements.studentResults.innerHTML = `${grade ? `<div class="private-grade"><span>Progres TP ${escapeHtml(grade.PROGRES_TP || "-")}</span><strong>${hasScore(grade.NR) ? `NR ${escapeHtml(grade.NR)}` : "Nilai rapor belum lengkap"}</strong><small>${escapeHtml(grade.STATUS_KELENGKAPAN || "")}</small></div>` : ""}<div class="result-chip-list">${results.length ? results.slice(0, 12).map(function (item) { return `<div><strong>${escapeHtml(item.score)}</strong><span>${escapeHtml(item.topicId || "Latihan")}</span><small>${escapeHtml(formatDateTime(item.date))}</small></div>`; }).join("") : `<p>Belum ada hasil permainan.</p>`}</div>`;
+}
+
+function renderStudentPracticeSelectors(classroom) {
+  if (!elements.studentPracticeMaterialSelect || !elements.studentPracticeTopicSelect) return;
+  const materials = state.publicData?.materials || [];
+  const preferredMaterial = elements.studentPracticeMaterialSelect.value || classroom?.ID_MATERI || materials[0]?.ID_MATERI || "";
+  elements.studentPracticeMaterialSelect.innerHTML = materials.map(function (item) {
+    return `<option value="${escapeAttribute(item.ID_MATERI)}">${escapeHtml(item.KODE_LM || "Materi")} - ${escapeHtml(item.JUDUL)}</option>`;
+  }).join("");
+  elements.studentPracticeMaterialSelect.value = materials.some(function (item) { return item.ID_MATERI === preferredMaterial; }) ? preferredMaterial : (materials[0]?.ID_MATERI || "");
+  renderStudentPracticeTopics(classroom?.ID_SUBMATERI || "");
+}
+
+function renderStudentPracticeTopics(preferredTopic) {
+  if (!elements.studentPracticeMaterialSelect || !elements.studentPracticeTopicSelect) return;
+  const material = (state.publicData?.materials || []).find(function (item) { return item.ID_MATERI === elements.studentPracticeMaterialSelect.value; });
+  const previous = typeof preferredTopic === "string" ? preferredTopic : elements.studentPracticeTopicSelect.value;
+  elements.studentPracticeTopicSelect.innerHTML = (material?.topics || []).map(function (item) {
+    return `<option value="${escapeAttribute(item.ID_SUBMATERI)}">${escapeHtml(item.JUDUL)}</option>`;
+  }).join("");
+  if (material?.topics?.some(function (item) { return item.ID_SUBMATERI === previous; })) elements.studentPracticeTopicSelect.value = previous;
+}
+
+async function startStudentPrerequisite() {
+  const materialId = elements.studentPracticeMaterialSelect?.value || "";
+  const topicId = elements.studentPracticeTopicSelect?.value || "";
+  const topic = findTopic(materialId, topicId);
+  await startPractice({
+    mode: "STUDENT",
+    materialId: materialId,
+    topicId: topicId,
+    activityKind: "PRASYARAT",
+    title: `Tes Prasyarat - ${topic?.JUDUL || "Matematika"}`,
+    returnScreen: "student",
+  });
 }
 
 async function refreshStudentSession(quiet) {
@@ -2142,6 +2250,7 @@ async function startPractice(options) {
     if (!response?.ok) throw new Error(response?.error || "Soal belum dapat disiapkan.");
     state.practice = response;
     state.practiceMode = options.mode;
+    state.practiceActivityKind = options.activityKind || response.assignment?.JENIS_TUGAS || "LATIHAN";
     state.practiceReturnScreen = options.returnScreen || (options.mode === "STUDENT" ? "student" : "guest");
     state.practiceIndex = 0;
     state.practiceAnswers = [];
@@ -2158,7 +2267,9 @@ async function startPractice(options) {
 function renderPractice() {
   if (!state.practice?.items?.length) return;
   const item = state.practice.items[state.practiceIndex];
-  elements.practiceModeLabel.textContent = state.practiceMode === "GUEST" ? "Latihan tamu - tidak disimpan" : `Percobaan ${state.practice.attemptNumber || 1}`;
+  elements.practiceModeLabel.textContent = state.practiceMode === "GUEST"
+    ? "Latihan tamu - tidak disimpan"
+    : `${state.practiceActivityKind === "PRASYARAT" ? "Tes Prasyarat" : "Latihan"} · Percobaan ${state.practice.attemptNumber || 1}`;
   elements.practiceTitle.textContent = state.practiceTitle;
   elements.practiceProgress.textContent = `${state.practiceIndex + 1} / ${state.practice.items.length}`;
   elements.practiceQuestionCode.textContent = `${item.level || "Mudah"} - ${item.questionId}`;
@@ -2215,7 +2326,7 @@ async function submitPracticeAnswers() {
     action: "submitPractice", mode: state.practiceMode, token: state.practiceMode === "STUDENT" ? state.studentSession?.token : "",
     clientId: makeId("M9KIRIM"), attemptId: state.practice.attemptId, attemptTicket: state.practice.attemptTicket, attemptNumber: state.practice.attemptNumber || 1,
     assignmentId: state.practice.assignment?.ID_TUGAS || "", materialId: state.practice.materialId, topicId: state.practice.topicId,
-    semester: Number(state.publicData?.settings?.SEMESTER_AKTIF || 1), activityKind: state.practice.assignment?.JENIS_TUGAS || "LATIHAN",
+    semester: Number(state.publicData?.settings?.SEMESTER_AKTIF || 1), activityKind: state.practiceActivityKind || state.practice.assignment?.JENIS_TUGAS || "LATIHAN",
     durationSeconds: Math.max(1, Math.round((Date.now() - state.practiceStartedAt) / 1000)), answers: state.practiceAnswers,
   };
   showLoading("Memeriksa jawaban...");
